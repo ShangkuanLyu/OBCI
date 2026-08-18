@@ -4,7 +4,7 @@ import { PageHero } from "@/components/ui/PageHero";
 import { NewsletterForm } from "@/components/forms/NewsletterForm";
 import { NewsIndex } from "@/components/news/NewsIndex";
 import { getNewsCategories, getPublishedNews } from "@/services/news";
-import { loc, formatDate } from "@/lib/utils/l10n";
+import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -44,6 +44,7 @@ export default async function NewsIndexPage({
     date: formatDate(article.published_at, locale),
     categorySlug: article.category?.slug ?? null,
     categoryName: article.category ? loc(article.category, "name", locale) : "",
+    image: mediaUrl(article.cover_image_path),
   }));
   const categoryItems = categories.map((cat) => ({
     slug: cat.slug,

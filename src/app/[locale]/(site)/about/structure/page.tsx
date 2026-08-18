@@ -54,7 +54,7 @@ export default async function StructurePage({
                   href={`/chapters/${chapter.slug}`}
                   className="group block border-t border-grey-300 pt-6"
                 >
-                  <p className="text-caption font-medium tracking-[0.08em] text-gold-600">
+                  <p className="text-caption font-medium tracking-[0.08em] text-rose-600">
                     {String(i + 1).padStart(2, "0")}
                   </p>
                   <h3 className="mt-3 text-h4 font-semibold text-ink transition-colors duration-200 group-hover:text-navy-800">
@@ -76,7 +76,7 @@ export default async function StructurePage({
       {partners.length > 0 && (
         <section className="bg-grey-50 py-16 md:py-24">
           <Container>
-            <p className="text-center text-caption font-medium uppercase tracking-[0.08em] text-gold-600">
+            <p className="text-center text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
               {t("partnershipsTitle")}
             </p>
             <p className="mx-auto mt-8 max-w-[48rem] text-center text-body leading-loose text-grey-500">

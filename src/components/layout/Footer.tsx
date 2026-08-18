@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getSiteSettings, settingString } from "@/services/settings";
@@ -22,23 +23,25 @@ export async function Footer() {
       <div className="mx-auto w-full max-w-[69.5rem] px-6 py-16 md:px-10 md:py-20">
         <div className="grid gap-12 md:grid-cols-12">
           <div className="md:col-span-5">
-            <p className="text-body font-semibold">
-              {locale === "zh"
-                ? "大洋洲工商协会"
-                : "Oceania Business Association"}
-            </p>
-            <p className="mt-1 text-caption tracking-[0.08em] text-white/50">
+            <Image
+              src="/logo.png"
+              alt={locale === "zh" ? "大洋洲工商协会" : "Oceania Business Association"}
+              width={1244}
+              height={656}
+              className="h-14 w-auto"
+            />
+            <p className="mt-5 text-caption tracking-[0.08em] text-white/50">
               {locale === "zh"
                 ? "OCEANIA BUSINESS ASSOCIATION INCORPORATED"
                 : "大洋洲工商协会 · OBCI"}
             </p>
-            <p className="mt-6 max-w-[26rem] text-small leading-relaxed text-white/70">
+            <p className="mt-5 max-w-[26rem] text-small leading-relaxed text-white/70">
               {t("mission")}
             </p>
           </div>
 
           <nav className="md:col-span-2" aria-label={t("navigation")}>
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-gold-400">
+            <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
               {t("navigation")}
             </p>
             <ul className="mt-5 space-y-3 text-small text-white/70">
@@ -50,7 +53,7 @@ export async function Footer() {
           </nav>
 
           <nav className="md:col-span-2" aria-label={t("membership")}>
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-gold-400">
+            <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
               {t("membership")}
             </p>
             <ul className="mt-5 space-y-3 text-small text-white/70">
@@ -62,7 +65,7 @@ export async function Footer() {
           </nav>
 
           <div className="md:col-span-3">
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-gold-400">
+            <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
               {t("contact")}
             </p>
             <ul className="mt-5 space-y-3 text-small text-white/70">

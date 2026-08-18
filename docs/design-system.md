@@ -1,6 +1,6 @@
 # Design System — OBCI
 
-Formula: **Apple design discipline × international-chamber authority × editorial information architecture × OBCI navy & gold identity.**
+Formula: **Apple design discipline × international-chamber authority × editorial information architecture × OBCI brand palette (indigo · royal blue · rose · ivory, sourced from obci.org.au).**
 Not: Apple clone, generic corporate template, SaaS landing page.
 
 Tokens live in [src/app/globals.css](../src/app/globals.css) (Tailwind v4 `@theme`). This document records the decisions and the usage rules.
@@ -9,25 +9,31 @@ Tokens live in [src/app/globals.css](../src/app/globals.css) (Tailwind v4 `@them
 
 ## 1. Colour
 
+Palette extracted from the organisation's existing brand (obci.org.au).
+
 | Token | Hex | Role |
 |---|---|---|
-| `navy-950` | `#050D1A` | Footer, darkest hero grounds |
-| `navy-900` | `#0A1930` | **Primary institutional colour** — header, hero, dark sections |
-| `navy-800` | `#11254A` | Hover/active on dark, links on light |
-| `navy-700/600` | `#1A3462` / `#24447D` | Supporting tints on dark surfaces |
-| `navy-100/50` | `#E8EDF5` / `#F2F5FA` | Subtle tinted backgrounds on light |
-| `gold-600` | `#A8842C` | Gold text on light backgrounds (AA-safe at small caps sizes) |
-| `gold-500` | `#C09A3E` | **Accent** — primary CTA background, active markers |
-| `gold-400` | `#D4B25C` | Gold text/rules on navy |
+| `navy-950` | `#030327` | Footer, deepest grounds, hero scrim |
+| `navy-900` | `#05053E` | **Primary institutional colour** — header, dark sections |
+| `navy-800/700` | `#101060` / `#1A1A78` | Hover/tints on dark surfaces |
+| `navy-100/50` | `#E9EBF5` / `#F4F5FA` | Cool tinted backgrounds, image placeholders |
+| `royal-700` | `#1B3373` | Hover state of royal |
+| `royal-600` | `#213E8C` | **Brand royal blue** — links, secondary buttons, numerals |
+| `royal-500` | `#2A70DE` | Bright blue highlight (sparingly) |
+| `rose-600` | `#B03A5A` | Rose text on light backgrounds, hover of rose |
+| `rose-500` | `#C84869` | **Accent** — primary CTA, active nav marker, labels |
+| `rose-400` | `#DE7B95` | Rose labels on dark surfaces |
+| `ivory` | `#F7F5E1` | Warm alternate section background |
 | `ink` | `#1D1D1F` | Body text |
-| `grey-50` | `#F5F5F7` | Alternate section background (the only section-zoning device besides navy) |
+| `grey-50` | `#F5F5F7` | Cool alternate section background |
 | `grey-300` | `#D2D2D7` | Hairline borders, dividers |
 | `grey-500/600` | `#6E6E73` / `#515154` | Secondary text, meta |
 
 Rules:
-- Gold is an **accent, never a surface colour for large areas**. Allowed: primary button, section labels, active nav marker, small rules, numerals. Forbidden: gold section backgrounds, gold headings at large sizes.
-- Page zoning uses exactly three surfaces: white → grey-50 → navy-900/950. No gradients, no tinted cards floating on white.
-- On navy: text is white / navy-100; accents gold-400.
+- Rose is the action accent (primary buttons white-on-rose, labels, active markers). Royal blue is the informational accent (links, "view all", numerals, secondary buttons). Neither is used as a large text colour.
+- Large colour surfaces are reserved for the brand tri-panel pattern (royal / rose / indigo blocks, e.g. home membership panels) — echoing the brand's colour-block language; use at most once per page.
+- Page zoning surfaces: white → grey-50 → ivory → navy-900/950. Photography with an indigo scrim (≤60%) is the preferred hero treatment.
+- On dark indigo: text white / white-70; labels rose-400.
 
 ## 2. Typography
 

@@ -86,7 +86,7 @@ export default async function MembershipPage({
                         {benefits.map((benefit) => (
                           <li
                             key={benefit}
-                            className="border-l-2 border-gold-500 pl-3 text-small leading-relaxed text-grey-600"
+                            className="border-l-2 border-rose-500 pl-3 text-small leading-relaxed text-grey-600"
                           >
                             {benefit}
                           </li>
@@ -130,7 +130,7 @@ export default async function MembershipPage({
             {steps.map((step, i) => (
               <Reveal key={step.num} delay={i * 80}>
                 <div className="border-t border-grey-300 pt-6">
-                  <p className="text-caption font-medium tracking-[0.08em] text-gold-600">
+                  <p className="text-caption font-medium tracking-[0.08em] text-rose-600">
                     {step.num}
                   </p>
                   <h3 className="mt-3 text-h4 font-semibold text-ink">

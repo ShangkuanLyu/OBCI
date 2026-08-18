@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/cn";
@@ -40,18 +41,22 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 bg-navy-900 text-white">
       <div className="mx-auto flex h-16 w-full max-w-[69.5rem] items-center justify-between px-6 md:px-10">
-        {/* Wordmark lockup */}
+        {/* Logo lockup */}
         <Link href="/" className="flex items-center gap-3" aria-label="OBCI">
-          <span className="flex h-9 w-9 items-center justify-center bg-gold-500 text-[0.8125rem] font-semibold tracking-tight text-navy-950">
-            OB
-          </span>
-          <span className="leading-tight">
-            <span className="block text-[0.9375rem] font-semibold tracking-wide">
-              {locale === "zh" ? "大洋洲工商协会" : "Oceania Business Association"}
-            </span>
-            <span className="hidden text-[0.6875rem] tracking-[0.08em] text-white/60 sm:block">
-              {locale === "zh" ? "OCEANIA BUSINESS ASSOCIATION" : "大洋洲工商协会 · OBCI"}
-            </span>
+          <Image
+            src="/logo.png"
+            alt={locale === "zh" ? "大洋洲工商协会" : "Oceania Business Association"}
+            width={1244}
+            height={656}
+            priority
+            className="h-10 w-auto"
+          />
+          <span className="hidden border-l border-white/20 pl-3 text-[0.8125rem] leading-snug text-white/80 sm:block">
+            {locale === "zh" ? (
+              <>大洋洲工商协会</>
+            ) : (
+              <>Oceania Business<br />Association</>
+            )}
           </span>
         </Link>
 
@@ -65,12 +70,12 @@ export function Header() {
                 "relative flex h-16 items-center px-3.5 text-small transition-colors duration-200",
                 isActive(pathname, item.href)
                   ? "text-white"
-                  : "text-white/70 hover:text-gold-400",
+                  : "text-white/70 hover:text-rose-400",
               )}
             >
               {t(item.key)}
               {isActive(pathname, item.href) && (
-                <span className="absolute inset-x-3.5 bottom-0 h-0.5 bg-gold-500" />
+                <span className="absolute inset-x-3.5 bottom-0 h-0.5 bg-rose-500" />
               )}
             </Link>
           ))}
@@ -80,13 +85,13 @@ export function Header() {
           <Link
             href={pathname}
             locale={otherLocale}
-            className="text-small text-white/70 transition-colors duration-200 hover:text-gold-400"
+            className="text-small text-white/70 transition-colors duration-200 hover:text-rose-400"
           >
             {t("switchLocale")}
           </Link>
           <Link
             href="/membership/apply"
-            className="inline-flex h-9 items-center rounded-md bg-gold-500 px-4 text-small font-medium text-navy-950 transition-colors duration-200 hover:bg-gold-600"
+            className="inline-flex h-9 items-center rounded-md bg-rose-500 px-4 text-small font-medium text-white transition-colors duration-200 hover:bg-rose-600"
           >
             {t("join")}
           </Link>
@@ -141,7 +146,7 @@ export function Header() {
                   href={item.href}
                   className={cn(
                     "flex items-center justify-between py-4 text-h4 font-medium",
-                    isActive(pathname, item.href) ? "text-gold-400" : "text-white",
+                    isActive(pathname, item.href) ? "text-rose-400" : "text-white",
                   )}
                 >
                   {t(item.key)}
@@ -152,7 +157,7 @@ export function Header() {
         </nav>
         <Link
           href="/membership/apply"
-          className="inline-flex h-12 items-center justify-center rounded-md bg-gold-500 text-small font-medium text-navy-950"
+          className="inline-flex h-12 items-center justify-center rounded-md bg-rose-500 text-small font-medium text-white"
         >
           {t("join")}
         </Link>

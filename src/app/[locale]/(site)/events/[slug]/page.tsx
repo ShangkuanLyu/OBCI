@@ -59,7 +59,7 @@ export default async function EventDetailPage({
       <section className="bg-navy-900 text-white">
         <Container className="pb-14 pt-14 md:pb-16 md:pt-16">
           <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-caption">
-            <span className="font-medium tracking-[0.08em] text-gold-400">
+            <span className="font-medium tracking-[0.08em] text-rose-400">
               {dateRange}
             </span>
             {location && <span className="text-white/60">· {location}</span>}
@@ -92,7 +92,7 @@ export default async function EventDetailPage({
                   href={event.registration_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-11 items-center justify-center rounded-md bg-gold-500 px-6 text-small font-medium text-navy-950 transition-colors duration-200 hover:bg-gold-600"
+                  className="inline-flex h-11 items-center justify-center rounded-md bg-rose-500 px-6 text-small font-medium text-navy-950 transition-colors duration-200 hover:bg-rose-600"
                 >
                   {t("registerInterest")}
                 </a>
@@ -110,7 +110,7 @@ export default async function EventDetailPage({
             <p className="mt-12 border-t border-grey-300 pt-6">
               <Link
                 href="/events"
-                className="text-small font-medium text-navy-800 transition-colors hover:text-gold-600"
+                className="text-small font-medium text-navy-800 transition-colors hover:text-rose-600"
               >
                 ← {t("backToEvents")}
               </Link>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/cn";
@@ -13,6 +14,7 @@ export type NewsListItem = {
   date: string;
   categorySlug: string | null;
   categoryName: string;
+  image: string | null;
 };
 
 export type NewsCategoryItem = { slug: string; name: string };
@@ -50,7 +52,7 @@ export function NewsIndex({
         <button type="button" onClick={() => setActive(null)} className={tabClass(!active)}>
           {t("all")}
           {!active && (
-            <span className="absolute inset-x-0 bottom-0 h-0.5 bg-gold-500" />
+            <span className="absolute inset-x-0 bottom-0 h-0.5 bg-rose-500" />
           )}
         </button>
         {categories.map((cat) => (
@@ -62,7 +64,7 @@ export function NewsIndex({
           >
             {cat.name}
             {active === cat.slug && (
-              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-gold-500" />
+              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-rose-500" />
             )}
           </button>
         ))}
@@ -73,20 +75,33 @@ export function NewsIndex({
       )}
 
       {lead && (
-        <Link href={`/news/${lead.slug}`} className="group block py-12 md:py-16">
-          <div className="max-w-[46rem]">
-            <p className="flex items-baseline gap-3 text-caption">
-              <span className="font-medium uppercase tracking-[0.08em] text-gold-600">
-                {lead.categoryName}
-              </span>
-              <span className="text-grey-500">{lead.date}</span>
-            </p>
-            <h2 className="mt-5 text-h3 font-semibold leading-[1.2] tracking-[-0.01em] text-ink transition-colors duration-200 group-hover:text-navy-800 md:text-h2">
-              {lead.title}
-            </h2>
-            <p className="mt-5 max-w-[42rem] text-body leading-relaxed text-grey-600">
-              {lead.summary}
-            </p>
+        <Link href={`/news/${lead.slug}`} className="group block py-12 md:py-14">
+          <div className="grid items-center gap-8 md:grid-cols-12">
+            {lead.image && (
+              <div className="relative aspect-[3/2] overflow-hidden rounded-md bg-navy-100 md:order-2 md:col-span-6">
+                <Image
+                  src={lead.image}
+                  alt=""
+                  fill
+                  sizes="(min-width: 768px) 540px, 100vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+              </div>
+            )}
+            <div className={cn(lead.image ? "md:col-span-6" : "md:col-span-8")}>
+              <p className="flex items-baseline gap-3 text-caption">
+                <span className="font-medium uppercase tracking-[0.08em] text-rose-600">
+                  {lead.categoryName}
+                </span>
+                <span className="text-grey-500">{lead.date}</span>
+              </p>
+              <h2 className="mt-5 text-h3 font-semibold leading-[1.2] tracking-[-0.01em] text-ink transition-colors duration-200 group-hover:text-royal-600 md:text-[2rem]">
+                {lead.title}
+              </h2>
+              <p className="mt-5 max-w-[42rem] text-body leading-relaxed text-grey-600">
+                {lead.summary}
+              </p>
+            </div>
           </div>
         </Link>
       )}
@@ -99,13 +114,24 @@ export function NewsIndex({
               href={`/news/${item.slug}`}
               className="group block"
             >
+              {item.image && (
+                <div className="relative mb-5 aspect-[3/2] overflow-hidden rounded-md bg-navy-100">
+                  <Image
+                    src={item.image}
+                    alt=""
+                    fill
+                    sizes="(min-width: 768px) 350px, 100vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
+                </div>
+              )}
               <p className="flex items-baseline gap-3 text-caption">
-                <span className="font-medium uppercase tracking-[0.08em] text-gold-600">
+                <span className="font-medium uppercase tracking-[0.08em] text-rose-600">
                   {item.categoryName}
                 </span>
                 <span className="text-grey-500">{item.date}</span>
               </p>
-              <h3 className="mt-4 text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-navy-800">
+              <h3 className="mt-4 text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-royal-600">
                 {item.title}
               </h3>
               <p className="mt-3 line-clamp-3 text-small leading-relaxed text-grey-600">

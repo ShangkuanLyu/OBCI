@@ -10,7 +10,7 @@ import type { Database } from "@/types/database.types";
 type ApplicationStatus = Database["public"]["Enums"]["application_status"];
 
 const STATUS_LABELS: Record<ApplicationStatus, { zh: string; en: string; className: string }> = {
-  submitted: { zh: "待处理", en: "Submitted", className: "text-gold-600" },
+  submitted: { zh: "待处理", en: "Submitted", className: "text-rose-600" },
   under_review: { zh: "审核中", en: "Under review", className: "text-navy-800" },
   approved: { zh: "已通过", en: "Approved", className: "text-green-700" },
   rejected: { zh: "已拒绝", en: "Rejected", className: "text-red-700" },

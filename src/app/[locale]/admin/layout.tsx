@@ -20,7 +20,7 @@ export default async function AdminLayout({
     <div className="flex min-h-dvh bg-grey-50">
       <aside className="hidden w-60 shrink-0 flex-col justify-between bg-navy-950 px-5 py-6 text-white md:flex">
         <div>
-          <p className="px-3 text-caption font-semibold tracking-[0.08em] text-gold-400">
+          <p className="px-3 text-caption font-semibold tracking-[0.08em] text-rose-400">
             OBCI · CMS
           </p>
           <div className="mt-8">
@@ -29,7 +29,7 @@ export default async function AdminLayout({
         </div>
         <div className="border-t border-white/10 px-3 pt-4">
           <p className="truncate text-caption text-white/60">{session.email}</p>
-          <p className="mt-0.5 text-caption text-gold-400">{session.profile.role}</p>
+          <p className="mt-0.5 text-caption text-rose-400">{session.profile.role}</p>
           <div className="mt-3">
             <SignOutButton locale={locale} />
           </div>

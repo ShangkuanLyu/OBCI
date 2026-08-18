@@ -66,7 +66,7 @@ export default async function AdminNewsPage({
                     title={row.is_featured ? (zh ? "焦点" : "Featured") : undefined}
                     className={cn(
                       "h-2 w-2 shrink-0 rounded-full",
-                      row.is_featured ? "bg-gold-500" : "bg-grey-100",
+                      row.is_featured ? "bg-rose-500" : "bg-grey-100",
                     )}
                   />
                   <span className="min-w-0 flex-1 truncate text-small font-medium text-ink">

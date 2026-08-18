@@ -40,7 +40,7 @@ export function ContactForm() {
 
   if (status === "success") {
     return (
-      <div className="border-t-2 border-gold-500 pt-6">
+      <div className="border-t-2 border-rose-500 pt-6">
         <p className="text-h4 font-semibold text-ink">{t("successTitle")}</p>
         <p className="mt-3 max-w-[42rem] text-body leading-relaxed text-grey-600">
           {t("successText")}

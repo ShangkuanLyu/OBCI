@@ -66,7 +66,7 @@ export default async function AboutPage({
           <SectionHeading label={t("missionLabel")} title={t("missionTitle")} />
           <div className="mt-14 grid gap-x-10 gap-y-10 md:grid-cols-2">
             <Reveal className="border-t border-grey-300 pt-6">
-              <p className="text-caption font-medium uppercase tracking-[0.08em] text-gold-600">
+              <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
                 {t("visionTitle")}
               </p>
               <p className="mt-4 max-w-[42rem] text-body leading-relaxed text-grey-600">
@@ -74,7 +74,7 @@ export default async function AboutPage({
               </p>
             </Reveal>
             <Reveal delay={80} className="border-t border-grey-300 pt-6">
-              <p className="text-caption font-medium uppercase tracking-[0.08em] text-gold-600">
+              <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
                 {t("missionTitle2")}
               </p>
               <p className="mt-4 max-w-[42rem] text-body leading-relaxed text-grey-600">
@@ -110,7 +110,7 @@ export default async function AboutPage({
           )}
           <Link
             href="/about/leadership"
-            className="mt-10 inline-block text-small font-medium text-navy-800 transition-colors hover:text-gold-600"
+            className="mt-10 inline-block text-small font-medium text-navy-800 transition-colors hover:text-rose-600"
           >
             {t("viewLeadership")} →
           </Link>
@@ -127,13 +127,13 @@ export default async function AboutPage({
           />
           <Link
             href="/about/structure"
-            className="mt-8 inline-block text-small font-medium text-navy-800 transition-colors hover:text-gold-600"
+            className="mt-8 inline-block text-small font-medium text-navy-800 transition-colors hover:text-rose-600"
           >
             {t("viewStructure")} →
           </Link>
 
           <div className="mt-16 border-t border-grey-300 pt-10">
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-gold-600">
+            <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
               {t("partnershipsTitle")}
             </p>
             <p className="mt-4 max-w-[42rem] text-body leading-relaxed text-grey-600">

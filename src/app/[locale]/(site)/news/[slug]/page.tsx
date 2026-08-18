@@ -1,9 +1,10 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { getAllNewsSlugs, getNewsBySlug, getPublishedNews } from "@/services/news";
-import { loc, formatDate } from "@/lib/utils/l10n";
+import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
 import { renderMarkdown } from "@/lib/utils/markdown";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
@@ -60,7 +61,7 @@ export default async function NewsArticlePage({
         <Container className="pb-14 pt-14 md:pb-16 md:pt-16">
           <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-caption">
             {article.category && (
-              <span className="font-medium uppercase tracking-[0.08em] text-gold-400">
+              <span className="font-medium uppercase tracking-[0.08em] text-rose-400">
                 {loc(article.category, "name", locale)}
               </span>
             )}
@@ -79,9 +80,21 @@ export default async function NewsArticlePage({
 
       <article className="bg-white py-14 md:py-20">
         <Container>
+          {mediaUrl(article.cover_image_path) && (
+            <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-navy-100">
+              <Image
+                src={mediaUrl(article.cover_image_path)!}
+                alt=""
+                fill
+                sizes="(min-width: 1024px) 896px, 100vw"
+                className="object-cover"
+                priority
+              />
+            </div>
+          )}
           <div className="mx-auto max-w-[42rem]">
             {bodyIsFallback && (
-              <p className="mb-8 border-l-2 border-gold-500 pl-4 text-small text-grey-500">
+              <p className="mb-8 border-l-2 border-rose-500 pl-4 text-small text-grey-500">
                 {locale === "zh" ? tCommon("englishOnly") : tCommon("chineseOnly")}
               </p>
             )}
@@ -115,7 +128,7 @@ export default async function NewsArticlePage({
               <h2 className="text-h4 font-semibold text-ink">{t("related")}</h2>
               <Link
                 href="/news"
-                className="text-small font-medium text-navy-800 transition-colors hover:text-gold-600"
+                className="text-small font-medium text-navy-800 transition-colors hover:text-rose-600"
               >
                 {t("backToNews")} →
               </Link>

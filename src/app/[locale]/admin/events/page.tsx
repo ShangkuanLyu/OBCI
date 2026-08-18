@@ -72,7 +72,7 @@ export default async function AdminEventsPage({
                   <p className="truncate text-small font-medium text-ink">
                     {title}
                     {event.is_featured && (
-                      <span className="ml-2 text-gold-400" title={zh ? "焦点活动" : "Featured"}>
+                      <span className="ml-2 text-rose-400" title={zh ? "焦点活动" : "Featured"}>
                         ★
                       </span>
                     )}

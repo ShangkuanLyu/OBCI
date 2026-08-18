@@ -14,7 +14,7 @@ export function PageHero({
     <section className="bg-navy-900 text-white">
       <Container className="pb-16 pt-14 md:pb-20 md:pt-16">
         {label && (
-          <p className="text-caption font-medium uppercase tracking-[0.08em] text-gold-400">
+          <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
             {label}
           </p>
         )}

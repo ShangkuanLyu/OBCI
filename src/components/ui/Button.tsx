@@ -8,8 +8,8 @@ const base =
   "inline-flex h-11 items-center justify-center rounded-md px-6 text-small font-medium transition-colors duration-200";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-gold-500 text-navy-950 hover:bg-gold-600",
-  secondary: "border border-navy-800 text-navy-800 hover:bg-navy-50",
+  primary: "bg-rose-500 text-white hover:bg-rose-600",
+  secondary: "border border-royal-600 text-royal-600 hover:bg-royal-100/60",
   secondaryDark: "border border-white/40 text-white hover:bg-white/10",
 };
 

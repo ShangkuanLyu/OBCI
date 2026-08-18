@@ -10,7 +10,7 @@ import type { Database } from "@/types/database.types";
 type EnquiryStatus = Database["public"]["Enums"]["enquiry_status"];
 
 const STATUS_LABELS: Record<EnquiryStatus, { zh: string; en: string; className: string }> = {
-  new: { zh: "新留言", en: "New", className: "text-gold-600" },
+  new: { zh: "新留言", en: "New", className: "text-rose-600" },
   in_progress: { zh: "处理中", en: "In progress", className: "text-navy-800" },
   closed: { zh: "已关闭", en: "Closed", className: "text-grey-500" },
 };

@@ -54,7 +54,7 @@ export default async function ChapterPage({
       {/* Chapter header — navy, editorial */}
       <section className="bg-navy-900 text-white">
         <Container className="pb-16 pt-14 md:pb-20 md:pt-16">
-          <p className="text-caption font-medium uppercase tracking-[0.08em] text-gold-400">
+          <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
             {t("title")}
           </p>
           <h1 className="mt-4 max-w-[20em] text-[2rem] font-semibold leading-[1.12] tracking-[-0.02em] md:text-h1">
@@ -76,7 +76,7 @@ export default async function ChapterPage({
               <div className="divide-y divide-grey-300 border-y border-grey-300">
                 {chapter.secretary_general && (
                   <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-5">
-                    <span className="text-caption font-medium uppercase tracking-[0.08em] text-gold-600">
+                    <span className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
                       {t("secretaryGeneral")}
                     </span>
                     <span className="text-body font-medium text-ink">
@@ -86,12 +86,12 @@ export default async function ChapterPage({
                 )}
                 {chapter.contact_email && (
                   <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-5">
-                    <span className="text-caption font-medium uppercase tracking-[0.08em] text-gold-600">
+                    <span className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
                       {tCommon("contactUs")}
                     </span>
                     <a
                       href={`mailto:${chapter.contact_email}`}
-                      className="text-body text-navy-800 underline decoration-grey-300 underline-offset-4 transition-colors hover:text-gold-600"
+                      className="text-body text-navy-800 underline decoration-grey-300 underline-offset-4 transition-colors hover:text-rose-600"
                     >
                       {chapter.contact_email}
                     </a>
@@ -118,7 +118,7 @@ export default async function ChapterPage({
 
             <Link
               href="/chapters"
-              className="mt-14 inline-block text-small font-medium text-navy-800 transition-colors hover:text-gold-600"
+              className="mt-14 inline-block text-small font-medium text-navy-800 transition-colors hover:text-rose-600"
             >
               ← {t("backToChapters")}
             </Link>

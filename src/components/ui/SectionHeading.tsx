@@ -32,7 +32,7 @@ export function SectionHeading({
         <p
           className={cn(
             "text-caption font-medium uppercase",
-            dark ? "text-gold-400" : "text-gold-600",
+            dark ? "text-rose-400" : "text-rose-600",
           )}
         >
           {label}

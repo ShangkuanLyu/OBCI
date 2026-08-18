@@ -80,7 +80,7 @@ export default async function ContactPage({
                     key={row.label}
                     className="border-b border-grey-300 py-5"
                   >
-                    <dt className="text-caption font-medium uppercase tracking-[0.08em] text-gold-600">
+                    <dt className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
                       {row.label}
                     </dt>
                     <dd className="mt-2 max-w-[42rem] text-body leading-relaxed text-ink">

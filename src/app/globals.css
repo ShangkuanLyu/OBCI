@@ -2,25 +2,34 @@
 
 /* ---------------------------------------------------------------------------
    OBCI design tokens
-   Navy = institutional identity · Gold = authority accent · Grey = editorial
-   Spacing rhythm and type scale follow the design-system doc (docs/design-system.md).
+   Palette sourced from the organisation's brand (obci.org.au):
+   deep indigo #05053E · royal blue #213E8C / #2A70DE · rose #C84869 · ivory #F7F5E1
+   Spacing rhythm and type scale follow docs/design-system.md.
 --------------------------------------------------------------------------- */
 
 @theme {
-  /* Brand — deep navy */
-  --color-navy-950: #050d1a;
-  --color-navy-900: #0a1930;
-  --color-navy-800: #11254a;
-  --color-navy-700: #1a3462;
-  --color-navy-600: #24447d;
-  --color-navy-100: #e8edf5;
-  --color-navy-50: #f2f5fa;
+  /* Brand — deep indigo (institutional dark surfaces) */
+  --color-navy-950: #030327;
+  --color-navy-900: #05053e;
+  --color-navy-800: #101060;
+  --color-navy-700: #1a1a78;
+  --color-navy-100: #e9ebf5;
+  --color-navy-50: #f4f5fa;
 
-  /* Brand — gold */
-  --color-gold-600: #a8842c;
-  --color-gold-500: #c09a3e;
-  --color-gold-400: #d4b25c;
-  --color-gold-100: #f4ecd9;
+  /* Brand — royal blue (links, secondary actions, highlights) */
+  --color-royal-700: #1b3373;
+  --color-royal-600: #213e8c;
+  --color-royal-500: #2a70de;
+  --color-royal-100: #e3ebfa;
+
+  /* Brand — rose accent (labels, primary CTA, active markers) */
+  --color-rose-600: #b03a5a;
+  --color-rose-500: #c84869;
+  --color-rose-400: #de7b95;
+  --color-rose-100: #f9e7ec;
+
+  /* Warm alternate background */
+  --color-ivory: #f7f5e1;
 
   /* Neutrals */
   --color-ink: #1d1d1f;
@@ -88,7 +97,7 @@ body {
 }
 
 ::selection {
-  background: var(--color-navy-800);
+  background: var(--color-royal-600);
   color: #ffffff;
 }
 

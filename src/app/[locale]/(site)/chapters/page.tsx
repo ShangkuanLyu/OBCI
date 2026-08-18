@@ -56,7 +56,7 @@ export default async function ChaptersPage({
                     href={`/chapters/${chapter.slug}`}
                     className="group block border-t border-grey-300 pt-6"
                   >
-                    <p className="text-caption font-medium tracking-[0.08em] text-gold-600">
+                    <p className="text-caption font-medium tracking-[0.08em] text-rose-600">
                       {String(i + 1).padStart(2, "0")}
                     </p>
                     <h2 className="mt-3 text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-navy-800">

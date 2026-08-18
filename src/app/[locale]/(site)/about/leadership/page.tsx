@@ -53,7 +53,7 @@ export default async function LeadershipPage({
           <div className="space-y-16 md:space-y-20">
             {groups.map((group) => (
               <div key={group.key}>
-                <p className="text-caption font-medium uppercase tracking-[0.08em] text-gold-600">
+                <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
                   {t(`groups.${group.key}`)}
                 </p>
                 <div className="mt-8 grid gap-x-10 gap-y-12 sm:grid-cols-2 md:grid-cols-3">

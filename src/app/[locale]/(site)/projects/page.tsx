@@ -60,7 +60,7 @@ export default async function ProjectsPage({
                   className="border-t border-grey-300 py-8 last:border-b md:py-10"
                 >
                   <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-caption">
-                    <span className="font-medium uppercase tracking-[0.08em] text-gold-600">
+                    <span className="font-medium uppercase tracking-[0.08em] text-rose-600">
                       {isKnownKind(project.kind)
                         ? t(`kinds.${project.kind}`)
                         : project.kind}
