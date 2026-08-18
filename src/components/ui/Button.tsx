@@ -2,14 +2,16 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/cn";
 import type { ComponentProps } from "react";
 
-type Variant = "primary" | "secondary" | "secondaryDark";
+type Variant = "primary" | "accent" | "secondary" | "secondaryDark";
 
 const base =
-  "inline-flex h-11 items-center justify-center rounded-md px-6 text-small font-medium transition-colors duration-200";
+  "inline-flex h-11 items-center justify-center rounded-lg px-6 text-small font-medium transition-colors duration-200";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-rose-500 text-white hover:bg-rose-600",
-  secondary: "border border-royal-600 text-royal-600 hover:bg-royal-100/60",
+  primary: "bg-royal-600 text-white hover:bg-royal-700",
+  accent: "bg-rose-500 text-white hover:bg-rose-600",
+  secondary:
+    "border border-grey-300 bg-white text-royal-600 hover:border-royal-600",
   secondaryDark: "border border-white/40 text-white hover:bg-white/10",
 };
 

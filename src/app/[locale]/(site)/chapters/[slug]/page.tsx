@@ -51,17 +51,18 @@ export default async function ChapterPage({
 
   return (
     <>
-      {/* Chapter header — navy, editorial */}
-      <section className="bg-navy-900 text-white">
-        <Container className="pb-16 pt-14 md:pb-20 md:pt-16">
-          <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
+      {/* Chapter header — light band */}
+      <section className="border-b border-grey-100 bg-royal-50">
+        <Container className="pb-12 pt-12 md:pb-16 md:pt-16">
+          <p className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em] text-royal-600">
+            <span className="h-0.5 w-6 rounded-full bg-rose-500" aria-hidden />
             {t("title")}
           </p>
-          <h1 className="mt-4 max-w-[20em] text-[2rem] font-semibold leading-[1.12] tracking-[-0.02em] md:text-h1">
+          <h1 className="mt-4 max-w-[20em] text-[2rem] font-semibold leading-[1.12] tracking-[-0.02em] text-ink md:text-h1">
             {loc(chapter, "name", locale)}
           </h1>
           {paragraphs[0] && (
-            <p className="mt-6 max-w-[36rem] text-body-lg text-navy-100/85">
+            <p className="mt-5 max-w-[36rem] text-body-lg text-grey-600">
               {paragraphs[0]}
             </p>
           )}
@@ -71,12 +72,12 @@ export default async function ChapterPage({
       <section className="bg-white py-16 md:py-24">
         <Container>
           <div className="max-w-[42rem]">
-            {/* Secretary-general & contact — hairline definition rows */}
+            {/* Secretary-general & contact — card-surface definition panel */}
             {(chapter.secretary_general || chapter.contact_email) && (
-              <div className="divide-y divide-grey-300 border-y border-grey-300">
+              <div className="card-surface divide-y divide-grey-100">
                 {chapter.secretary_general && (
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-5">
-                    <span className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 px-6 py-5">
+                    <span className="text-caption font-semibold uppercase tracking-[0.08em] text-royal-600">
                       {t("secretaryGeneral")}
                     </span>
                     <span className="text-body font-medium text-ink">
@@ -85,13 +86,13 @@ export default async function ChapterPage({
                   </div>
                 )}
                 {chapter.contact_email && (
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-5">
-                    <span className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 px-6 py-5">
+                    <span className="text-caption font-semibold uppercase tracking-[0.08em] text-royal-600">
                       {tCommon("contactUs")}
                     </span>
                     <a
                       href={`mailto:${chapter.contact_email}`}
-                      className="text-body text-navy-800 underline decoration-grey-300 underline-offset-4 transition-colors hover:text-rose-600"
+                      className="text-body font-medium text-royal-600 transition-colors hover:text-royal-500"
                     >
                       {chapter.contact_email}
                     </a>
@@ -118,7 +119,7 @@ export default async function ChapterPage({
 
             <Link
               href="/chapters"
-              className="mt-14 inline-block text-small font-medium text-navy-800 transition-colors hover:text-rose-600"
+              className="mt-14 inline-block text-small font-medium text-royal-600 transition-colors hover:text-royal-500"
             >
               ← {t("backToChapters")}
             </Link>
@@ -126,16 +127,18 @@ export default async function ChapterPage({
         </Container>
       </section>
 
-      {/* Join — quiet closing band */}
-      <section className="border-t border-grey-300 bg-grey-50 py-16 md:py-20">
+      {/* Join — closing CTA band */}
+      <section className="bg-white pb-16 md:pb-24">
         <Container>
-          <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-h4 font-semibold text-ink">
+          <div className="rounded-2xl bg-royal-600 px-8 py-10 text-center text-white md:px-14">
+            <h2 className="mx-auto max-w-[24em] text-h3 font-semibold tracking-[-0.01em]">
               {t("joinPrompt")}
             </h2>
-            <ButtonLink href="/membership/apply" variant="primary">
-              {t("joinCta")}
-            </ButtonLink>
+            <div className="mt-7 flex justify-center">
+              <ButtonLink href="/membership/apply" variant="accent">
+                {t("joinCta")}
+              </ButtonLink>
+            </div>
           </div>
         </Container>
       </section>

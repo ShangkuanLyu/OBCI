@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 type Status = "idle" | "pending" | "success" | "error";
 
 const inputClass =
-  "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-navy-800";
+  "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-royal-500";
 
 const labelClass = "mb-2 block text-small font-medium text-ink";
 
@@ -130,7 +130,7 @@ export function ContactForm() {
           required
           rows={6}
           maxLength={5000}
-          className="w-full rounded-md border border-grey-300 bg-white px-4 py-3 text-small leading-relaxed outline-none transition-colors focus:border-navy-800"
+          className="w-full rounded-md border border-grey-300 bg-white px-4 py-3 text-small leading-relaxed outline-none transition-colors focus:border-royal-500"
         />
       </div>
 

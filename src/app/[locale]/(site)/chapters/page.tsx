@@ -46,20 +46,20 @@ export default async function ChaptersPage({
             <p className="text-body text-grey-500">{t("empty")}</p>
           )}
 
-          {/* Numbered typographic grid — hairline rows, no cards */}
-          <div className="grid gap-x-10 gap-y-12 sm:grid-cols-2 md:grid-cols-3">
+          {/* Numbered card-surface tile grid */}
+          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
             {chapters.map((chapter, i) => {
               const description = loc(chapter, "description", locale);
               return (
                 <Reveal key={chapter.id} delay={(i % 3) * 80}>
                   <Link
                     href={`/chapters/${chapter.slug}`}
-                    className="group block border-t border-grey-300 pt-6"
+                    className="card-surface group block p-7 transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(5,5,62,0.06),0_16px_40px_-16px_rgba(5,5,62,0.25)]"
                   >
-                    <p className="text-caption font-medium tracking-[0.08em] text-rose-600">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-royal-50 text-small font-semibold text-royal-600">
                       {String(i + 1).padStart(2, "0")}
-                    </p>
-                    <h2 className="mt-3 text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-navy-800">
+                    </span>
+                    <h2 className="mt-5 text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-royal-600">
                       {loc(chapter, "name", locale)}
                     </h2>
                     {chapter.secretary_general && (

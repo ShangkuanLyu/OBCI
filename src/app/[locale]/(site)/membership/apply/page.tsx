@@ -44,7 +44,7 @@ export default async function MembershipApplyPage({
 
       <section className="bg-white py-16 md:py-24">
         <Container>
-          <div className="max-w-[42rem]">
+          <div className="card-surface max-w-[46rem] p-8 md:p-10">
             <ApplyForm types={types} />
           </div>
         </Container>

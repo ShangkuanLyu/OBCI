@@ -53,14 +53,14 @@ export default async function ProjectsPage({
           )}
 
           {projects.length > 0 && (
-            <div>
+            <div className="space-y-4">
               {projects.map((project) => (
                 <article
                   key={project.id}
-                  className="border-t border-grey-300 py-8 last:border-b md:py-10"
+                  className="card-surface p-6 md:p-8"
                 >
-                  <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-caption">
-                    <span className="font-medium uppercase tracking-[0.08em] text-rose-600">
+                  <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-caption">
+                    <span className="rounded-full bg-royal-50 px-2.5 py-1 font-medium text-royal-600">
                       {isKnownKind(project.kind)
                         ? t(`kinds.${project.kind}`)
                         : project.kind}

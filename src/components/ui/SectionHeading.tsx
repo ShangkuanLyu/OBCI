@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils/cn";
 
 /**
- * The standard section header: gold caption label → heading → optional
- * standfirst. `align` and `tone` must stay consistent within a page.
+ * The standard section header: royal label with short rule → heading →
+ * optional standfirst. `align` must stay consistent within a page.
  */
 export function SectionHeading({
   label,
@@ -31,10 +31,18 @@ export function SectionHeading({
       {label && (
         <p
           className={cn(
-            "text-caption font-medium uppercase",
-            dark ? "text-rose-400" : "text-rose-600",
+            "flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em]",
+            align === "center" && "justify-center",
+            dark ? "text-royal-200" : "text-royal-600",
           )}
         >
+          <span
+            className={cn(
+              "h-0.5 w-6 rounded-full",
+              dark ? "bg-rose-400" : "bg-rose-500",
+            )}
+            aria-hidden
+          />
           {label}
         </p>
       )}
@@ -49,8 +57,8 @@ export function SectionHeading({
       {standfirst && (
         <p
           className={cn(
-            "mt-6 text-body-lg",
-            dark ? "text-navy-100/85" : "text-grey-600",
+            "mt-5 text-body-lg",
+            dark ? "text-white/75" : "text-grey-600",
           )}
         >
           {standfirst}

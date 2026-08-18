@@ -1,10 +1,11 @@
+import Image from "next/image";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { getPastEvents, getUpcomingEvents } from "@/services/events";
 import type { EventRow } from "@/services/events";
-import { loc, formatDate } from "@/lib/utils/l10n";
+import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -20,19 +21,20 @@ export async function generateMetadata({
   return { title: t("title"), description: t("standfirst") };
 }
 
-/** One event — date + typography + hairline-divider row (home pattern). */
+/** One event — card row with royal date chip + thumbnail (home pattern). */
 function EventItem({ event, locale }: { event: EventRow; locale: Locale }) {
   const location = loc(event, "location", locale);
+  const cover = mediaUrl(event.cover_image_path);
   return (
     <Link
       href={`/events/${event.slug}`}
-      className="group grid grid-cols-[5.5rem_1fr] items-baseline gap-6 border-t border-grey-300 py-7 last:border-b md:grid-cols-[7rem_1fr_auto]"
+      className="card-surface group grid grid-cols-[4.5rem_1fr] items-center gap-5 p-5 transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(5,5,62,0.06),0_16px_40px_-16px_rgba(5,5,62,0.25)] md:grid-cols-[4.5rem_1fr_9rem] md:gap-6"
     >
-      <p>
-        <span className="block text-h3 font-semibold leading-none text-navy-900">
+      <p className="flex h-[4.5rem] flex-col items-center justify-center rounded-xl bg-royal-600 text-white">
+        <span className="text-h3 font-semibold leading-none">
           {new Date(event.starts_at).getDate()}
         </span>
-        <span className="mt-1 block text-caption text-grey-500">
+        <span className="mt-1 text-[0.6875rem] tracking-[0.04em] text-white/75">
           {formatDate(event.starts_at, locale, {
             year: "numeric",
             month: "short",
@@ -40,16 +42,24 @@ function EventItem({ event, locale }: { event: EventRow; locale: Locale }) {
         </span>
       </p>
       <div>
-        <h3 className="text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-navy-800">
+        <h3 className="text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-royal-600">
           {loc(event, "title", locale)}
         </h3>
         {location && (
-          <p className="mt-2 text-small text-grey-500">{location}</p>
+          <p className="mt-1.5 text-small text-grey-500">{location}</p>
         )}
       </div>
-      <span className="hidden text-small font-medium text-navy-800 md:block">
-        →
-      </span>
+      {cover && (
+        <div className="relative hidden aspect-[16/10] overflow-hidden rounded-lg md:block">
+          <Image
+            src={cover}
+            alt=""
+            fill
+            sizes="144px"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          />
+        </div>
+      )}
     </Link>
   );
 }
@@ -85,14 +95,14 @@ export default async function EventsIndexPage({
         </section>
       )}
 
-      {/* Upcoming — date + typography + divider rows */}
+      {/* Upcoming — card rows with date chip + thumbnail */}
       {upcoming.length > 0 && (
         <section className="bg-white py-16 md:py-24">
           <Container>
             <h2 className="text-h3 font-semibold tracking-[-0.01em] text-ink">
               {t("upcoming")}
             </h2>
-            <div className="mt-10">
+            <div className="mt-10 space-y-4">
               {upcoming.map((event) => (
                 <EventItem key={event.id} event={event} locale={locale} />
               ))}
@@ -106,7 +116,7 @@ export default async function EventsIndexPage({
         <section
           className={
             upcoming.length > 0
-              ? "border-t border-grey-300 bg-grey-50 py-16 md:py-24"
+              ? "border-t border-grey-100 bg-royal-50 py-16 md:py-24"
               : "bg-white py-16 md:py-24"
           }
         >
@@ -114,7 +124,7 @@ export default async function EventsIndexPage({
             <h2 className="text-h3 font-semibold tracking-[-0.01em] text-ink">
               {t("past")}
             </h2>
-            <div className="mt-10">
+            <div className="mt-10 space-y-4">
               {past.map((event) => (
                 <EventItem key={event.id} event={event} locale={locale} />
               ))}

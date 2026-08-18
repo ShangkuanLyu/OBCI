@@ -56,23 +56,23 @@ export default async function NewsArticlePage({
 
   return (
     <>
-      {/* Article header — navy, editorial */}
-      <section className="bg-navy-900 text-white">
-        <Container className="pb-14 pt-14 md:pb-16 md:pt-16">
-          <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-caption">
+      {/* Article header — light editorial */}
+      <section className="border-b border-grey-100 bg-royal-50">
+        <Container className="pb-12 pt-12 md:pb-14 md:pt-16">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-caption">
             {article.category && (
-              <span className="font-medium uppercase tracking-[0.08em] text-rose-400">
+              <span className="rounded-full bg-white px-2.5 py-1 font-medium text-royal-600">
                 {loc(article.category, "name", locale)}
               </span>
             )}
-            <span className="text-white/60">
+            <span className="text-grey-500">
               {formatDate(article.published_at, locale)}
             </span>
             {article.author_name && (
-              <span className="text-white/60">· {article.author_name}</span>
+              <span className="text-grey-500">· {article.author_name}</span>
             )}
           </p>
-          <h1 className="mt-5 max-w-[24em] text-[1.75rem] font-semibold leading-[1.2] tracking-[-0.015em] md:text-[2.5rem] md:leading-[1.15]">
+          <h1 className="mt-5 max-w-[24em] text-[1.75rem] font-semibold leading-[1.2] tracking-[-0.015em] text-ink md:text-[2.5rem] md:leading-[1.15]">
             {loc(article, "title", locale)}
           </h1>
         </Container>
@@ -81,7 +81,7 @@ export default async function NewsArticlePage({
       <article className="bg-white py-14 md:py-20">
         <Container>
           {mediaUrl(article.cover_image_path) && (
-            <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-navy-100">
+            <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-royal-50">
               <Image
                 src={mediaUrl(article.cover_image_path)!}
                 alt=""
@@ -94,7 +94,7 @@ export default async function NewsArticlePage({
           )}
           <div className="mx-auto max-w-[42rem]">
             {bodyIsFallback && (
-              <p className="mb-8 border-l-2 border-rose-500 pl-4 text-small text-grey-500">
+              <p className="mb-8 rounded-lg bg-royal-50 px-4 py-3 text-small text-royal-700">
                 {locale === "zh" ? tCommon("englishOnly") : tCommon("chineseOnly")}
               </p>
             )}
@@ -110,7 +110,7 @@ export default async function NewsArticlePage({
                 <a
                   href={article.source_url}
                   rel="noopener noreferrer"
-                  className="underline decoration-grey-300 underline-offset-4 hover:text-navy-800"
+                  className="underline decoration-grey-300 underline-offset-4 hover:text-royal-600"
                 >
                   {article.source_url}
                 </a>
@@ -128,7 +128,7 @@ export default async function NewsArticlePage({
               <h2 className="text-h4 font-semibold text-ink">{t("related")}</h2>
               <Link
                 href="/news"
-                className="text-small font-medium text-navy-800 transition-colors hover:text-rose-600"
+                className="text-small font-medium text-royal-600 transition-colors hover:text-royal-500"
               >
                 {t("backToNews")} →
               </Link>
@@ -143,7 +143,7 @@ export default async function NewsArticlePage({
                   <p className="text-caption text-grey-500">
                     {formatDate(item.published_at, locale)}
                   </p>
-                  <h3 className="mt-3 text-body font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-navy-800">
+                  <h3 className="mt-3 text-body font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-royal-600">
                     {loc(item, "title", locale)}
                   </h3>
                 </Link>

@@ -17,7 +17,7 @@ const ALLOWED_DOC_TYPES = new Set([
 const MAX_DOC_BYTES = 20 * 1024 * 1024;
 
 const inputClass =
-  "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-navy-800";
+  "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-royal-500";
 
 const labelClass = "mb-2 block text-small font-medium text-ink";
 
@@ -95,11 +95,11 @@ export function ApplyForm({
 
   if (status === "success" || status === "partial") {
     return (
-      <div className="border-t border-grey-300 pt-8">
+      <div className="rounded-lg bg-royal-50 p-7 md:p-8">
         <h3 className="text-h3 font-semibold tracking-[-0.01em] text-ink">
           {t("successTitle")}
         </h3>
-        <p className="mt-4 max-w-[42rem] text-body leading-relaxed text-grey-600">
+        <p className="mt-4 text-body leading-relaxed text-grey-600">
           {t("successText")}
         </p>
         {status === "partial" && (
@@ -209,7 +209,7 @@ export function ApplyForm({
           name="message"
           rows={5}
           placeholder={t("messagePlaceholder")}
-          className="w-full rounded-md border border-grey-300 bg-white px-4 py-3 text-small outline-none transition-colors focus:border-navy-800"
+          className="w-full rounded-md border border-grey-300 bg-white px-4 py-3 text-small outline-none transition-colors focus:border-royal-500"
         />
       </div>
 
@@ -223,7 +223,7 @@ export function ApplyForm({
           type="file"
           multiple
           accept=".pdf,.doc,.docx,image/jpeg,image/png"
-          className="block w-full text-small text-grey-600 file:mr-3 file:h-9 file:rounded-md file:border file:border-grey-300 file:bg-white file:px-4 file:text-small file:font-medium file:text-navy-900 file:transition-colors hover:file:bg-grey-50"
+          className="block w-full text-small text-grey-600 file:mr-3 file:h-9 file:rounded-md file:border file:border-grey-300 file:bg-white file:px-4 file:text-small file:font-medium file:text-royal-600 file:transition-colors hover:file:bg-grey-50"
         />
         <p className="mt-2 text-caption text-grey-500">{t("documentsHint")}</p>
       </div>

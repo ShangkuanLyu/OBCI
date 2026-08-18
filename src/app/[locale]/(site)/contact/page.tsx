@@ -48,7 +48,7 @@ export default async function ContactPage({
             value: (
               <a
                 href={`mailto:${email}`}
-                className="text-navy-800 transition-colors duration-200 hover:underline"
+                className="text-royal-600 transition-colors duration-200 hover:text-royal-500 hover:underline"
               >
                 {email}
               </a>
@@ -71,24 +71,23 @@ export default async function ContactPage({
           <div className="grid gap-y-16 md:grid-cols-12 md:gap-x-10">
             {/* Contact details */}
             <div className="md:col-span-5">
-              <h2 className="text-h4 font-semibold text-ink">
-                {t("infoTitle")}
-              </h2>
-              <dl className="mt-8 border-t border-grey-300">
-                {rows.map((row) => (
-                  <div
-                    key={row.label}
-                    className="border-b border-grey-300 py-5"
-                  >
-                    <dt className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
-                      {row.label}
-                    </dt>
-                    <dd className="mt-2 max-w-[42rem] text-body leading-relaxed text-ink">
-                      {row.value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
+              <div className="card-surface p-7 md:p-8">
+                <h2 className="text-h4 font-semibold text-ink">
+                  {t("infoTitle")}
+                </h2>
+                <dl className="mt-7 space-y-6">
+                  {rows.map((row) => (
+                    <div key={row.label}>
+                      <dt className="text-caption font-medium uppercase tracking-[0.08em] text-royal-600">
+                        {row.label}
+                      </dt>
+                      <dd className="mt-2 text-body leading-relaxed text-ink">
+                        {row.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
             </div>
 
             {/* Enquiry form */}

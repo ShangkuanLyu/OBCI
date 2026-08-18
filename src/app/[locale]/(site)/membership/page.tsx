@@ -55,12 +55,12 @@ export default async function MembershipPage({
         standfirst={t("standfirst")}
       />
 
-      {/* Membership types — typographic 3-column grid */}
+      {/* Membership types — card grid with colored top bars */}
       <section className="bg-white py-16 md:py-24">
         <Container>
           <SectionHeading label={t("typesLabel")} title={t("typesTitle")} />
 
-          <div className="mt-14 grid gap-x-10 gap-y-12 md:grid-cols-3">
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
             {types.map((type, i) => {
               const primary =
                 locale === "zh" ? type.benefits_zh : type.benefits_en;
@@ -69,50 +69,64 @@ export default async function MembershipPage({
               const benefits =
                 primary && primary.length > 0 ? primary : (fallback ?? []);
               const description = loc(type, "description", locale);
+              const bar = ["bg-royal-600", "bg-rose-500", "bg-royal-500"][
+                i % 3
+              ];
 
               return (
-                <Reveal key={type.id} delay={(i % 3) * 80}>
-                  <div className="flex h-full flex-col border-t border-grey-300 pt-6">
-                    <h3 className="text-h4 font-semibold text-ink">
-                      {loc(type, "name", locale)}
-                    </h3>
-                    {description && (
-                      <p className="mt-3 text-small leading-relaxed text-grey-600">
-                        {description}
-                      </p>
-                    )}
-                    {benefits.length > 0 && (
-                      <ul className="mt-6 space-y-2.5">
-                        {benefits.map((benefit) => (
-                          <li
-                            key={benefit}
-                            className="border-l-2 border-rose-500 pl-3 text-small leading-relaxed text-grey-600"
-                          >
-                            {benefit}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <p className="mt-8 border-t border-grey-300 pt-5">
-                      {type.price_annual !== null ? (
-                        <>
-                          <span className="text-h4 font-semibold text-navy-900">
-                            {formatPrice(
-                              type.price_annual,
-                              type.currency,
-                              locale,
-                            )}
-                          </span>{" "}
+                <Reveal key={type.id} delay={(i % 3) * 80} className="h-full">
+                  <div className="card-surface flex h-full flex-col overflow-hidden">
+                    <span className={`block h-1.5 ${bar}`} aria-hidden />
+                    <div className="flex flex-1 flex-col p-7">
+                      <div className="pb-8">
+                        <h3 className="text-h4 font-semibold text-ink">
+                          {loc(type, "name", locale)}
+                        </h3>
+                        {description && (
+                          <p className="mt-3 text-small leading-relaxed text-grey-600">
+                            {description}
+                          </p>
+                        )}
+                        {benefits.length > 0 && (
+                          <ul className="mt-6 space-y-2.5">
+                            {benefits.map((benefit) => (
+                              <li
+                                key={benefit}
+                                className="flex gap-2.5 text-small leading-relaxed text-grey-600"
+                              >
+                                <span
+                                  className="font-semibold text-royal-600"
+                                  aria-hidden
+                                >
+                                  ✓
+                                </span>
+                                {benefit}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <p className="mt-auto border-t border-grey-100 pt-5">
+                        {type.price_annual !== null ? (
+                          <>
+                            <span className="text-h4 font-semibold text-ink">
+                              {formatPrice(
+                                type.price_annual,
+                                type.currency,
+                                locale,
+                              )}
+                            </span>{" "}
+                            <span className="text-caption text-grey-500">
+                              {t("perYear")}
+                            </span>
+                          </>
+                        ) : (
                           <span className="text-caption text-grey-500">
-                            {t("perYear")}
+                            {t("feeContact")}
                           </span>
-                        </>
-                      ) : (
-                        <span className="text-caption text-grey-500">
-                          {t("feeContact")}
-                        </span>
-                      )}
-                    </p>
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </Reveal>
               );
@@ -121,22 +135,22 @@ export default async function MembershipPage({
         </Container>
       </section>
 
-      {/* Application process — grey band, numbered steps */}
+      {/* Application process — grey band, numbered step cards */}
       <section className="bg-grey-50 py-16 md:py-24">
         <Container>
           <SectionHeading label={t("processLabel")} title={t("processTitle")} />
 
-          <div className="mt-14 grid gap-x-10 gap-y-10 md:grid-cols-3">
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
             {steps.map((step, i) => (
-              <Reveal key={step.num} delay={i * 80}>
-                <div className="border-t border-grey-300 pt-6">
-                  <p className="text-caption font-medium tracking-[0.08em] text-rose-600">
+              <Reveal key={step.num} delay={i * 80} className="h-full">
+                <div className="card-surface h-full p-7">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-royal-50 text-small font-semibold text-royal-600">
                     {step.num}
-                  </p>
-                  <h3 className="mt-3 text-h4 font-semibold text-ink">
+                  </span>
+                  <h3 className="mt-5 text-h4 font-semibold text-ink">
                     {step.title}
                   </h3>
-                  <p className="mt-3 max-w-[24rem] text-small leading-relaxed text-grey-600">
+                  <p className="mt-3 text-small leading-relaxed text-grey-600">
                     {step.text}
                   </p>
                 </div>
@@ -146,15 +160,17 @@ export default async function MembershipPage({
         </Container>
       </section>
 
-      {/* Apply — navy call-to-action band */}
-      <section className="bg-navy-900 py-24 text-white md:py-32">
-        <Container className="text-center">
-          <div className="flex justify-center">
-            <ButtonLink href="/membership/apply" variant="primary">
-              {t("applyCta")}
-            </ButtonLink>
+      {/* Apply — royal call-to-action band */}
+      <section className="bg-white py-16 md:py-24">
+        <Container>
+          <div className="rounded-2xl bg-royal-600 px-8 py-10 text-center text-white md:px-14">
+            <div className="flex justify-center">
+              <ButtonLink href="/membership/apply" variant="accent">
+                {t("applyCta")}
+              </ButtonLink>
+            </div>
+            <p className="mt-5 text-caption text-white/70">{t("applyNote")}</p>
           </div>
-          <p className="mt-6 text-caption text-white/60">{t("applyNote")}</p>
         </Container>
       </section>
     </>

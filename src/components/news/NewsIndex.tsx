@@ -39,8 +39,8 @@ export function NewsIndex({
     cn(
       "relative shrink-0 pb-4 text-small transition-colors",
       isActive
-        ? "font-medium text-navy-900"
-        : "text-grey-500 hover:text-navy-800",
+        ? "font-medium text-royal-600"
+        : "text-grey-500 hover:text-royal-600",
     );
 
   return (
@@ -52,7 +52,7 @@ export function NewsIndex({
         <button type="button" onClick={() => setActive(null)} className={tabClass(!active)}>
           {t("all")}
           {!active && (
-            <span className="absolute inset-x-0 bottom-0 h-0.5 bg-rose-500" />
+            <span className="absolute inset-x-0 bottom-0 h-0.5 bg-royal-600" />
           )}
         </button>
         {categories.map((cat) => (
@@ -64,7 +64,7 @@ export function NewsIndex({
           >
             {cat.name}
             {active === cat.slug && (
-              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-rose-500" />
+              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-royal-600" />
             )}
           </button>
         ))}
@@ -78,7 +78,7 @@ export function NewsIndex({
         <Link href={`/news/${lead.slug}`} className="group block py-12 md:py-14">
           <div className="grid items-center gap-8 md:grid-cols-12">
             {lead.image && (
-              <div className="relative aspect-[3/2] overflow-hidden rounded-md bg-navy-100 md:order-2 md:col-span-6">
+              <div className="relative aspect-[3/2] overflow-hidden rounded-md bg-royal-50 md:order-2 md:col-span-6">
                 <Image
                   src={lead.image}
                   alt=""
@@ -89,8 +89,8 @@ export function NewsIndex({
               </div>
             )}
             <div className={cn(lead.image ? "md:col-span-6" : "md:col-span-8")}>
-              <p className="flex items-baseline gap-3 text-caption">
-                <span className="font-medium uppercase tracking-[0.08em] text-rose-600">
+              <p className="flex items-center gap-3 text-caption">
+                <span className="rounded-full bg-royal-50 px-2.5 py-1 font-medium text-royal-600">
                   {lead.categoryName}
                 </span>
                 <span className="text-grey-500">{lead.date}</span>
@@ -115,7 +115,7 @@ export function NewsIndex({
               className="group block"
             >
               {item.image && (
-                <div className="relative mb-5 aspect-[3/2] overflow-hidden rounded-md bg-navy-100">
+                <div className="relative mb-5 aspect-[3/2] overflow-hidden rounded-md bg-royal-50">
                   <Image
                     src={item.image}
                     alt=""
@@ -125,8 +125,8 @@ export function NewsIndex({
                   />
                 </div>
               )}
-              <p className="flex items-baseline gap-3 text-caption">
-                <span className="font-medium uppercase tracking-[0.08em] text-rose-600">
+              <p className="flex items-center gap-3 text-caption">
+                <span className="rounded-full bg-royal-50 px-2.5 py-1 font-medium text-royal-600">
                   {item.categoryName}
                 </span>
                 <span className="text-grey-500">{item.date}</span>

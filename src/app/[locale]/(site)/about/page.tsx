@@ -60,24 +60,30 @@ export default async function AboutPage({
         </Container>
       </section>
 
-      {/* Vision & mission — grey band, two hairline columns */}
+      {/* Vision & mission — grey band, two card panels */}
       <section className="bg-grey-50 py-16 md:py-24">
         <Container>
           <SectionHeading label={t("missionLabel")} title={t("missionTitle")} />
-          <div className="mt-14 grid gap-x-10 gap-y-10 md:grid-cols-2">
-            <Reveal className="border-t border-grey-300 pt-6">
-              <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <Reveal className="card-surface p-7 md:p-8">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-royal-50 text-small font-semibold text-royal-600">
+                01
+              </span>
+              <h3 className="mt-5 text-h4 font-semibold text-ink">
                 {t("visionTitle")}
-              </p>
-              <p className="mt-4 max-w-[42rem] text-body leading-relaxed text-grey-600">
+              </h3>
+              <p className="mt-3 max-w-[42rem] text-body leading-relaxed text-grey-600">
                 {t("visionText")}
               </p>
             </Reveal>
-            <Reveal delay={80} className="border-t border-grey-300 pt-6">
-              <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
+            <Reveal delay={80} className="card-surface p-7 md:p-8">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-royal-50 text-small font-semibold text-royal-600">
+                02
+              </span>
+              <h3 className="mt-5 text-h4 font-semibold text-ink">
                 {t("missionTitle2")}
-              </p>
-              <p className="mt-4 max-w-[42rem] text-body leading-relaxed text-grey-600">
+              </h3>
+              <p className="mt-3 max-w-[42rem] text-body leading-relaxed text-grey-600">
                 {t("missionText")}
               </p>
             </Reveal>
@@ -85,7 +91,7 @@ export default async function AboutPage({
         </Container>
       </section>
 
-      {/* Leadership teaser — typographic grid */}
+      {/* Leadership teaser — card tiles */}
       <section className="bg-white py-16 md:py-24">
         <Container>
           <SectionHeading
@@ -93,31 +99,33 @@ export default async function AboutPage({
             title={t("leadershipTitle")}
           />
           {leadership.length > 0 && (
-            <div className="mt-14 grid grid-cols-2 gap-x-10 gap-y-10 md:grid-cols-4">
+            <div className="mt-10 grid grid-cols-2 gap-6 md:grid-cols-4">
               {leadership.map((person, i) => (
-                <Reveal key={person.id} delay={i * 80}>
-                  <div className="border-t border-grey-300 pt-6">
-                    <p className="text-h4 font-semibold text-ink">
-                      {loc(person, "name", locale)}
-                    </p>
-                    <p className="mt-2 text-small text-grey-500">
-                      {loc(person, "title", locale)}
-                    </p>
-                  </div>
+                <Reveal
+                  key={person.id}
+                  delay={i * 80}
+                  className="card-surface p-6"
+                >
+                  <p className="text-h4 font-semibold text-ink">
+                    {loc(person, "name", locale)}
+                  </p>
+                  <p className="mt-2 text-small text-grey-500">
+                    {loc(person, "title", locale)}
+                  </p>
                 </Reveal>
               ))}
             </div>
           )}
           <Link
             href="/about/leadership"
-            className="mt-10 inline-block text-small font-medium text-navy-800 transition-colors hover:text-rose-600"
+            className="mt-10 inline-block text-small font-medium text-royal-600 transition-colors hover:text-royal-500"
           >
             {t("viewLeadership")} →
           </Link>
         </Container>
       </section>
 
-      {/* Governance teaser + partnerships */}
+      {/* Governance teaser — grey band */}
       <section className="bg-grey-50 py-16 md:py-24">
         <Container>
           <SectionHeading
@@ -127,19 +135,20 @@ export default async function AboutPage({
           />
           <Link
             href="/about/structure"
-            className="mt-8 inline-block text-small font-medium text-navy-800 transition-colors hover:text-rose-600"
+            className="mt-8 inline-block text-small font-medium text-royal-600 transition-colors hover:text-royal-500"
           >
             {t("viewStructure")} →
           </Link>
+        </Container>
+      </section>
 
-          <div className="mt-16 border-t border-grey-300 pt-10">
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
-              {t("partnershipsTitle")}
-            </p>
-            <p className="mt-4 max-w-[42rem] text-body leading-relaxed text-grey-600">
-              {t("partnershipsText")}
-            </p>
-          </div>
+      {/* Partnerships — light royal band */}
+      <section className="bg-royal-50 py-16 md:py-24">
+        <Container>
+          <SectionHeading
+            title={t("partnershipsTitle")}
+            standfirst={t("partnershipsText")}
+          />
         </Container>
       </section>
     </>

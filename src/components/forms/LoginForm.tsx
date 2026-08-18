@@ -34,7 +34,7 @@ export function LoginForm({ locale }: { locale: string }) {
   }
 
   const inputClass =
-    "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-navy-800";
+    "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-royal-500";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -70,7 +70,7 @@ export function LoginForm({ locale }: { locale: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-11 w-full items-center justify-center rounded-md bg-navy-900 text-small font-medium text-white transition-colors duration-200 hover:bg-navy-800 disabled:opacity-50"
+        className="inline-flex h-11 w-full items-center justify-center rounded-md bg-royal-600 text-small font-medium text-white transition-colors duration-200 hover:bg-royal-700 disabled:opacity-50"
       >
         {locale === "zh" ? "登录" : "Sign in"}
       </button>

@@ -13,7 +13,7 @@ export default async function LoginPage({
   return (
     <section className="bg-grey-50 py-24 md:py-32">
       <Container>
-        <div className="mx-auto max-w-sm bg-white px-8 py-10">
+        <div className="card-surface mx-auto max-w-sm px-8 py-10">
           <h1 className="text-h4 font-semibold text-ink">
             {locale === "zh" ? "会员登录" : "Sign in"}
           </h1>

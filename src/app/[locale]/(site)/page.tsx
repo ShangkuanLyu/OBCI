@@ -35,74 +35,99 @@ export default async function HomePage({
     getPartners().catch(() => []),
   ]);
   const events = [...upcoming, ...past].slice(0, 3);
+  const zh = locale === "zh";
 
-  const membershipPanels = [
+  const stats = [
+    { value: "Melbourne", label: zh ? "总部立足墨尔本" : "Headquartered in Melbourne" },
+    { value: String(chapters.length || 6), label: zh ? "专业委员会" : "Professional committees" },
+    { value: String(partners.length || 7), label: zh ? "中国省市合作" : "Provincial partnerships" },
+    { value: zh ? "5 天" : "5 days", label: zh ? "入会审核时限" : "Application review time" },
+  ];
+
+  const membershipCards = [
     {
-      href: "/membership",
-      bg: "bg-royal-600 hover:bg-royal-700",
-      title: locale === "zh" ? "个人会员" : "Individual",
-      text:
-        locale === "zh"
-          ? "面向参与中澳经贸活动的专业人士。"
-          : "For professionals engaging in Oceania–China trade.",
+      bar: "bg-royal-600",
+      title: zh ? "个人会员" : "Individual",
+      text: zh
+        ? "面向参与中澳经贸活动的专业人士。"
+        : "For professionals engaging in Oceania–China trade.",
     },
     {
-      href: "/membership",
-      bg: "bg-rose-500 hover:bg-rose-600",
-      title: locale === "zh" ? "企业会员" : "Corporate",
-      text:
-        locale === "zh"
-          ? "面向拓展国际市场的企业与机构。"
-          : "For enterprises expanding into international markets.",
+      bar: "bg-rose-500",
+      title: zh ? "企业会员" : "Corporate",
+      text: zh
+        ? "面向拓展国际市场的企业与机构。"
+        : "For enterprises expanding into international markets.",
     },
     {
-      href: "/membership",
-      bg: "bg-navy-900 hover:bg-navy-800",
-      title: locale === "zh" ? "协会与机构会员" : "Associations",
-      text:
-        locale === "zh"
-          ? "面向深耕多边合作的行业组织。"
-          : "For industry bodies focused on multilateral cooperation.",
+      bar: "bg-royal-500",
+      title: zh ? "协会与机构会员" : "Associations & Institutions",
+      text: zh
+        ? "面向深耕多边合作的行业组织。"
+        : "For industry bodies focused on multilateral cooperation.",
     },
   ];
 
   return (
     <>
-      {/* Hero — full-bleed photography with indigo scrim */}
-      <section className="relative overflow-hidden bg-navy-900 text-white">
-        <Image
-          src={assetPath("/images/hero.jpg")}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-navy-950/55" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-navy-950/80 to-transparent" />
-        <Container className="relative flex min-h-[560px] flex-col justify-center pb-24 pt-24 md:min-h-[640px] md:pb-32 md:pt-28">
-          <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
-            {locale === "zh" ? "Oceania Business Association" : "大洋洲工商协会"}
-          </p>
-          <h1 className="mt-6 max-w-[15em] text-[2.375rem] leading-[1.1] font-semibold tracking-[-0.02em] md:text-[3.5rem] md:leading-[1.08]">
-            {t("heroTitle")}
-          </h1>
-          <p className="mt-7 max-w-[34rem] text-body-lg text-white/85">
-            {t("heroText")}
-          </p>
-          <div className="mt-10 flex flex-wrap gap-4">
-            <ButtonLink href="/membership/apply" variant="primary">
-              {t("heroPrimary")}
-            </ButtonLink>
-            <ButtonLink href="/about" variant="secondaryDark">
-              {t("heroSecondary")}
-            </ButtonLink>
+      {/* Hero — light band, editorial split with photography */}
+      <section className="border-b border-grey-100 bg-royal-50">
+        <Container className="pb-16 pt-14 md:pb-20 md:pt-20">
+          <div className="grid items-center gap-10 md:grid-cols-12 md:gap-12">
+            <div className="md:col-span-6">
+              <p className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em] text-royal-600">
+                <span className="h-0.5 w-6 rounded-full bg-rose-500" aria-hidden />
+                {zh ? "Oceania Business Association" : "大洋洲工商协会"}
+              </p>
+              <h1 className="mt-5 text-[2.25rem] leading-[1.12] font-semibold tracking-[-0.02em] text-ink md:text-[3.25rem] md:leading-[1.08]">
+                {t("heroTitle")}
+              </h1>
+              <p className="mt-6 max-w-[32rem] text-body-lg text-grey-600">
+                {t("heroText")}
+              </p>
+              <div className="mt-9 flex flex-wrap gap-4">
+                <ButtonLink href="/membership/apply" variant="accent">
+                  {t("heroPrimary")}
+                </ButtonLink>
+                <ButtonLink href="/about" variant="secondary">
+                  {t("heroSecondary")}
+                </ButtonLink>
+              </div>
+            </div>
+            <div className="relative md:col-span-6">
+              <div
+                className="absolute -bottom-4 -right-4 hidden h-full w-full rounded-2xl bg-royal-100 md:block"
+                aria-hidden
+              />
+              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
+                <Image
+                  src={assetPath("/images/hero.jpg")}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(min-width: 768px) 540px, 100vw"
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Stats strip */}
+          <div className="card-surface mt-14 grid grid-cols-2 divide-grey-100 md:grid-cols-4 md:divide-x">
+            {stats.map((stat) => (
+              <div key={stat.label} className="px-6 py-6 md:px-8">
+                <p className="text-h3 font-semibold tracking-[-0.01em] text-royal-600">
+                  {stat.value}
+                </p>
+                <p className="mt-1 text-caption text-grey-500">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </Container>
       </section>
 
-      {/* Featured news — editorial grid with photography */}
-      <section className="bg-white py-20 md:py-28">
+      {/* Featured news — card grid with photography */}
+      <section className="bg-white py-18 md:py-24">
         <Container>
           <div className="flex items-end justify-between">
             <SectionHeading
@@ -112,20 +137,23 @@ export default async function HomePage({
             />
             <Link
               href="/news"
-              className="hidden shrink-0 text-small font-medium text-royal-600 transition-colors hover:text-rose-600 md:block"
+              className="hidden shrink-0 text-small font-medium text-royal-600 transition-colors hover:text-royal-500 md:block"
             >
               {tCommon("viewAll")} →
             </Link>
           </div>
 
-          <div className="mt-12 grid gap-x-8 gap-y-12 md:grid-cols-3">
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
             {news.map((article, i) => {
               const cover = mediaUrl(article.cover_image_path);
               return (
                 <Reveal key={article.id} as="article" delay={i * 80}>
-                  <Link href={`/news/${article.slug}`} className="group block">
+                  <Link
+                    href={`/news/${article.slug}`}
+                    className="card-surface group block overflow-hidden transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(5,5,62,0.06),0_16px_40px_-16px_rgba(5,5,62,0.25)]"
+                  >
                     {cover && (
-                      <div className="relative aspect-[3/2] overflow-hidden rounded-md bg-navy-100">
+                      <div className="relative aspect-[3/2] overflow-hidden bg-royal-50">
                         <Image
                           src={cover}
                           alt=""
@@ -135,22 +163,24 @@ export default async function HomePage({
                         />
                       </div>
                     )}
-                    <p className="mt-5 flex items-baseline gap-3 text-caption">
-                      <span className="font-medium uppercase tracking-[0.08em] text-rose-600">
-                        {article.category
-                          ? loc(article.category, "name", locale)
-                          : ""}
-                      </span>
-                      <span className="text-grey-500">
-                        {formatDate(article.published_at, locale)}
-                      </span>
-                    </p>
-                    <h3 className="mt-3 text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-royal-600">
-                      {loc(article, "title", locale)}
-                    </h3>
-                    <p className="mt-3 line-clamp-2 text-small leading-relaxed text-grey-600">
-                      {loc(article, "summary", locale)}
-                    </p>
+                    <div className="p-6">
+                      <p className="flex items-center gap-3 text-caption">
+                        {article.category && (
+                          <span className="rounded-full bg-royal-50 px-2.5 py-1 font-medium text-royal-600">
+                            {loc(article.category, "name", locale)}
+                          </span>
+                        )}
+                        <span className="text-grey-500">
+                          {formatDate(article.published_at, locale)}
+                        </span>
+                      </p>
+                      <h3 className="mt-4 text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-royal-600">
+                        {loc(article, "title", locale)}
+                      </h3>
+                      <p className="mt-3 line-clamp-2 text-small leading-relaxed text-grey-600">
+                        {loc(article, "summary", locale)}
+                      </p>
+                    </div>
                   </Link>
                 </Reveal>
               );
@@ -159,38 +189,23 @@ export default async function HomePage({
 
           <Link
             href="/news"
-            className="mt-10 inline-block text-small font-medium text-royal-600 md:hidden"
+            className="mt-8 inline-block text-small font-medium text-royal-600 md:hidden"
           >
             {tCommon("viewAll")} →
           </Link>
         </Container>
       </section>
 
-      {/* About — warm ivory editorial band with photography */}
-      <section className="bg-ivory py-20 md:py-28">
+      {/* About — split with photography */}
+      <section className="bg-grey-50 py-18 md:py-24">
         <Container>
           <div className="grid items-center gap-10 md:grid-cols-12 md:gap-14">
-            <div className="md:col-span-6">
-              <SectionHeading label={t("aboutLabel")} title={t("aboutTitle")} />
-              <p className="mt-6 max-w-[34rem] text-body leading-relaxed text-grey-600">
-                {t("aboutText")}
-              </p>
-              <Link
-                href="/about"
-                className="mt-8 inline-block text-small font-medium text-royal-600 transition-colors hover:text-rose-600"
-              >
-                {t("aboutCta")} →
-              </Link>
-            </div>
-            <div className="md:col-span-6">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
+            <div className="order-2 md:order-1 md:col-span-6">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
                 <Image
-                  src={
-                    mediaUrl("events/agm-2026.jpg") ??
-                    assetPath("/images/hero.jpg")
-                  }
+                  src={mediaUrl("events/agm-2026.jpg") ?? assetPath("/images/hero.jpg")}
                   alt={
-                    locale === "zh"
+                    zh
                       ? "协会 2026 年度会员大会现场"
                       : "The association's 2026 Annual General Meeting"
                   }
@@ -200,34 +215,45 @@ export default async function HomePage({
                 />
               </div>
             </div>
+            <div className="order-1 md:order-2 md:col-span-6">
+              <SectionHeading label={t("aboutLabel")} title={t("aboutTitle")} />
+              <p className="mt-5 max-w-[34rem] text-body leading-relaxed text-grey-600">
+                {t("aboutText")}
+              </p>
+              <div className="mt-8">
+                <ButtonLink href="/about" variant="secondary">
+                  {t("aboutCta")}
+                </ButtonLink>
+              </div>
+            </div>
           </div>
         </Container>
       </section>
 
-      {/* Chapters — numbered typographic grid */}
-      <section className="bg-white py-20 md:py-28">
+      {/* Chapters — numbered tiles */}
+      <section className="bg-white py-18 md:py-24">
         <Container>
           <SectionHeading
             label={t("chaptersLabel")}
             title={t("chaptersTitle")}
             standfirst={t("chaptersStandfirst")}
           />
-          <div className="mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-2 md:grid-cols-3">
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 md:grid-cols-3">
             {chapters.map((chapter, i) => (
               <Reveal key={chapter.id} delay={(i % 3) * 80}>
                 <Link
                   href={`/chapters/${chapter.slug}`}
-                  className="group block border-t-2 border-grey-100 pt-6 transition-colors hover:border-royal-600"
+                  className="card-surface group block p-7 transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(5,5,62,0.06),0_16px_40px_-16px_rgba(5,5,62,0.25)]"
                 >
-                  <p className="text-caption font-medium tracking-[0.08em] text-royal-600">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-royal-50 text-small font-semibold text-royal-600">
                     {String(i + 1).padStart(2, "0")}
-                  </p>
-                  <h3 className="mt-3 text-h4 font-semibold text-ink transition-colors duration-200 group-hover:text-royal-600">
+                  </span>
+                  <h3 className="mt-5 text-h4 font-semibold text-ink transition-colors duration-200 group-hover:text-royal-600">
                     {loc(chapter, "name", locale)}
                   </h3>
                   {chapter.secretary_general && (
                     <p className="mt-2 text-small text-grey-500">
-                      {locale === "zh" ? "秘书长" : "Secretary-General"} ·{" "}
+                      {zh ? "秘书长" : "Secretary-General"} ·{" "}
                       {chapter.secretary_general}
                     </p>
                   )}
@@ -238,19 +264,19 @@ export default async function HomePage({
         </Container>
       </section>
 
-      {/* Events — date + typography + thumbnail rows */}
-      <section className="bg-grey-50 py-20 md:py-28">
+      {/* Events — card rows with date chip + thumbnail */}
+      <section className="bg-royal-50 py-18 md:py-24">
         <Container>
           <div className="flex items-end justify-between">
             <SectionHeading label={t("eventsLabel")} title={t("eventsTitle")} />
             <Link
               href="/events"
-              className="hidden shrink-0 text-small font-medium text-royal-600 transition-colors hover:text-rose-600 md:block"
+              className="hidden shrink-0 text-small font-medium text-royal-600 transition-colors hover:text-royal-500 md:block"
             >
               {tCommon("viewAll")} →
             </Link>
           </div>
-          <div className="mt-12">
+          <div className="mt-10 space-y-4">
             {events.length === 0 && (
               <p className="text-body text-grey-500">{tEvents("empty")}</p>
             )}
@@ -260,13 +286,13 @@ export default async function HomePage({
                 <Link
                   key={event.id}
                   href={`/events/${event.slug}`}
-                  className="group grid grid-cols-[5.5rem_1fr] items-center gap-6 border-t border-grey-300 py-6 last:border-b md:grid-cols-[7rem_1fr_10rem]"
+                  className="card-surface group grid grid-cols-[4.5rem_1fr] items-center gap-5 p-5 transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(5,5,62,0.06),0_16px_40px_-16px_rgba(5,5,62,0.25)] md:grid-cols-[4.5rem_1fr_9rem] md:gap-6"
                 >
-                  <p>
-                    <span className="block text-h3 font-semibold leading-none text-royal-600">
+                  <p className="flex h-[4.5rem] flex-col items-center justify-center rounded-xl bg-royal-600 text-white">
+                    <span className="text-h3 font-semibold leading-none">
                       {new Date(event.starts_at).getDate()}
                     </span>
-                    <span className="mt-1 block text-caption text-grey-500">
+                    <span className="mt-1 text-[0.6875rem] tracking-[0.04em] text-white/75">
                       {formatDate(event.starts_at, locale, {
                         year: "numeric",
                         month: "short",
@@ -278,18 +304,18 @@ export default async function HomePage({
                       {loc(event, "title", locale)}
                     </h3>
                     {loc(event, "location", locale) && (
-                      <p className="mt-2 text-small text-grey-500">
+                      <p className="mt-1.5 text-small text-grey-500">
                         {loc(event, "location", locale)}
                       </p>
                     )}
                   </div>
                   {cover && (
-                    <div className="relative hidden aspect-[16/10] overflow-hidden rounded-md md:block">
+                    <div className="relative hidden aspect-[16/10] overflow-hidden rounded-lg md:block">
                       <Image
                         src={cover}
                         alt=""
                         fill
-                        sizes="160px"
+                        sizes="144px"
                         className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                       />
                     </div>
@@ -301,52 +327,63 @@ export default async function HomePage({
         </Container>
       </section>
 
-      {/* Membership — brand tri-colour panels */}
-      <section className="bg-white py-20 md:py-28">
+      {/* Membership — three cards + CTA band */}
+      <section className="bg-white py-18 md:py-24">
         <Container>
           <SectionHeading
             label={t("membershipLabel")}
             title={t("membershipTitle")}
             standfirst={t("membershipText")}
           />
-          <div className="mt-12 grid gap-4 md:grid-cols-3">
-            {membershipPanels.map((panel) => (
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
+            {membershipCards.map((card) => (
               <Link
-                key={panel.title}
-                href={panel.href}
-                className={`group flex min-h-[13rem] flex-col justify-between rounded-lg p-8 text-white transition-colors duration-200 ${panel.bg}`}
+                key={card.title}
+                href="/membership"
+                className="card-surface group block overflow-hidden transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(5,5,62,0.06),0_16px_40px_-16px_rgba(5,5,62,0.25)]"
               >
-                <div>
-                  <h3 className="text-h4 font-semibold">{panel.title}</h3>
-                  <p className="mt-3 max-w-[16rem] text-small leading-relaxed text-white/80">
-                    {panel.text}
+                <span className={`block h-1.5 ${card.bar}`} aria-hidden />
+                <div className="p-7">
+                  <h3 className="text-h4 font-semibold text-ink transition-colors duration-200 group-hover:text-royal-600">
+                    {card.title}
+                  </h3>
+                  <p className="mt-3 text-small leading-relaxed text-grey-600">
+                    {card.text}
                   </p>
+                  <span className="mt-5 inline-block text-small font-medium text-royal-600">
+                    {tCommon("learnMore")} →
+                  </span>
                 </div>
-                <span className="text-small font-medium">
-                  {tCommon("learnMore")} →
-                </span>
               </Link>
             ))}
           </div>
-          <div className="mt-10 flex flex-wrap items-center gap-5">
-            <ButtonLink href="/membership/apply" variant="primary">
-              {tMembership("applyCta")}
-            </ButtonLink>
-            <p className="text-caption text-grey-500">
-              {tMembership("applyNote")}
-            </p>
+
+          <div className="mt-12 rounded-2xl bg-royal-600 px-8 py-10 text-center text-white md:px-14">
+            <h2 className="mx-auto max-w-[24em] text-h3 font-semibold tracking-[-0.01em]">
+              {zh
+                ? "与我们一起，开拓中澳市场的下一步"
+                : "Take the next step in Oceania–China business with us"}
+            </h2>
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-5">
+              <ButtonLink href="/membership/apply" variant="accent">
+                {tMembership("applyCta")}
+              </ButtonLink>
+              <p className="text-caption text-white/70">
+                {tMembership("applyNote")}
+              </p>
+            </div>
           </div>
         </Container>
       </section>
 
-      {/* Partners — quiet text band */}
+      {/* Partners — quiet band */}
       {partners.length > 0 && (
-        <section className="border-t border-grey-100 bg-white py-14 md:py-16">
+        <section className="border-t border-grey-100 bg-white py-12 md:py-14">
           <Container>
-            <p className="text-center text-caption font-medium uppercase tracking-[0.08em] text-grey-500">
+            <p className="text-center text-caption font-semibold uppercase tracking-[0.08em] text-grey-500">
               {t("partnersTitle")}
             </p>
-            <p className="mx-auto mt-6 max-w-[48rem] text-center text-body leading-loose text-grey-600">
+            <p className="mx-auto mt-5 max-w-[48rem] text-center text-body leading-loose text-grey-600">
               {partners.map((partner, i) => (
                 <span key={partner.id}>
                   {loc(partner, "name", locale)}

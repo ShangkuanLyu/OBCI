@@ -46,12 +46,12 @@ export function NewsletterForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder={t("placeholder")}
-        className="h-11 flex-1 rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-navy-800"
+        className="h-11 flex-1 rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-royal-500"
       />
       <button
         type="submit"
         disabled={status === "pending"}
-        className="inline-flex h-11 items-center rounded-md bg-navy-900 px-5 text-small font-medium text-white transition-colors duration-200 hover:bg-navy-800 disabled:opacity-50"
+        className="inline-flex h-11 items-center rounded-md bg-royal-600 px-5 text-small font-medium text-white transition-colors duration-200 hover:bg-royal-700 disabled:opacity-50"
       >
         {t("subscribe")}
       </button>

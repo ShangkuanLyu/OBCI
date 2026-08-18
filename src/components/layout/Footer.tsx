@@ -42,7 +42,7 @@ export async function Footer() {
           </div>
 
           <nav className="md:col-span-2" aria-label={t("navigation")}>
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
+            <p className="text-caption font-medium uppercase tracking-[0.08em] text-royal-200">
               {t("navigation")}
             </p>
             <ul className="mt-5 space-y-3 text-small text-white/70">
@@ -54,7 +54,7 @@ export async function Footer() {
           </nav>
 
           <nav className="md:col-span-2" aria-label={t("membership")}>
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
+            <p className="text-caption font-medium uppercase tracking-[0.08em] text-royal-200">
               {t("membership")}
             </p>
             <ul className="mt-5 space-y-3 text-small text-white/70">
@@ -66,7 +66,7 @@ export async function Footer() {
           </nav>
 
           <div className="md:col-span-3">
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-400">
+            <p className="text-caption font-medium uppercase tracking-[0.08em] text-royal-200">
               {t("contact")}
             </p>
             <ul className="mt-5 space-y-3 text-small text-white/70">

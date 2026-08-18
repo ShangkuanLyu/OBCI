@@ -53,28 +53,34 @@ export default async function LeadershipPage({
           <div className="space-y-16 md:space-y-20">
             {groups.map((group) => (
               <div key={group.key}>
-                <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
+                <p className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em] text-royal-600">
+                  <span
+                    className="h-0.5 w-6 rounded-full bg-rose-500"
+                    aria-hidden
+                  />
                   {t(`groups.${group.key}`)}
                 </p>
-                <div className="mt-8 grid gap-x-10 gap-y-12 sm:grid-cols-2 md:grid-cols-3">
+                <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-3">
                   {group.people.map((person, i) => {
                     const portrait = mediaUrl(person.portrait_path);
                     const name = loc(person, "name", locale);
                     const bio = loc(person, "bio", locale);
                     return (
-                      <Reveal key={person.id} delay={(i % 3) * 80}>
-                        <div className="border-t border-grey-300 pt-6">
-                          {portrait && (
-                            <div className="mb-6 overflow-hidden rounded-md">
-                              <Image
-                                src={portrait}
-                                alt={name}
-                                width={480}
-                                height={600}
-                                className="aspect-[4/5] w-full object-cover"
-                              />
-                            </div>
-                          )}
+                      <Reveal
+                        key={person.id}
+                        delay={(i % 3) * 80}
+                        className="card-surface overflow-hidden"
+                      >
+                        {portrait && (
+                          <Image
+                            src={portrait}
+                            alt={name}
+                            width={480}
+                            height={600}
+                            className="aspect-[4/5] w-full bg-royal-50 object-cover"
+                          />
+                        )}
+                        <div className="p-6">
                           <h2 className="text-h4 font-semibold text-ink">
                             {name}
                           </h2>
@@ -82,7 +88,7 @@ export default async function LeadershipPage({
                             {loc(person, "title", locale)}
                           </p>
                           {bio && (
-                            <p className="mt-4 max-w-[42rem] text-small leading-relaxed text-grey-600">
+                            <p className="mt-4 text-small leading-relaxed text-grey-600">
                               {bio}
                             </p>
                           )}

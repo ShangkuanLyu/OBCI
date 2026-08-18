@@ -25,7 +25,7 @@ export default async function NotFound() {
   return (
     <section className="bg-white py-32 md:py-40">
       <Container className="text-center">
-        <p className="text-caption font-medium uppercase tracking-[0.08em] text-rose-600">
+        <p className="text-caption font-medium uppercase tracking-[0.08em] text-royal-600">
           404
         </p>
         <h1 className="mt-4 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.015em] text-ink md:text-h2">
