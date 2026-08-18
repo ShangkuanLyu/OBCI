@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { assetPath } from "@/lib/utils/asset";
 import { getSiteSettings, settingString } from "@/services/settings";
 
 export async function Footer() {
@@ -24,7 +25,7 @@ export async function Footer() {
         <div className="grid gap-12 md:grid-cols-12">
           <div className="md:col-span-5">
             <Image
-              src="/logo.png"
+              src={assetPath("/logo.png")}
               alt={locale === "zh" ? "大洋洲工商协会" : "Oceania Business Association"}
               width={1244}
               height={656}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
+import { assetPath } from "@/lib/utils/asset";
 import { cn } from "@/lib/utils/cn";
 
 const NAV_ITEMS = [
@@ -44,7 +45,7 @@ export function Header() {
         {/* Logo lockup */}
         <Link href="/" className="flex items-center gap-3" aria-label="OBCI">
           <Image
-            src="/logo.png"
+            src={assetPath("/logo.png")}
             alt={locale === "zh" ? "大洋洲工商协会" : "Oceania Business Association"}
             width={1244}
             height={656}

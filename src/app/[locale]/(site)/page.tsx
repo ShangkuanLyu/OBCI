@@ -9,6 +9,7 @@ import { getFeaturedNews } from "@/services/news";
 import { getPastEvents, getUpcomingEvents } from "@/services/events";
 import { getChapters, getPartners } from "@/services/organisation";
 import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
+import { assetPath } from "@/lib/utils/asset";
 import type { Locale } from "@/i18n/routing";
 
 export const revalidate = 300;
@@ -70,7 +71,7 @@ export default async function HomePage({
       {/* Hero — full-bleed photography with indigo scrim */}
       <section className="relative overflow-hidden bg-navy-900 text-white">
         <Image
-          src="/images/hero.jpg"
+          src={assetPath("/images/hero.jpg")}
           alt=""
           fill
           priority
@@ -186,7 +187,7 @@ export default async function HomePage({
                 <Image
                   src={
                     mediaUrl("events/agm-2026.jpg") ??
-                    "/images/hero.jpg"
+                    assetPath("/images/hero.jpg")
                   }
                   alt={
                     locale === "zh"
