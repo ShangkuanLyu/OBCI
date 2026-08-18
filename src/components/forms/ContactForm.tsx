@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { submitContactEnquiry, type ActionState } from "@/app/actions/public";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
-const initialState: ActionState = { status: "idle" };
+type Status = "idle" | "pending" | "success" | "error";
 
 const inputClass =
   "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-navy-800";
@@ -16,12 +16,29 @@ export function ContactForm() {
   const t = useTranslations("contact");
   const tCommon = useTranslations("common");
   const locale = useLocale();
-  const [state, formAction, pending] = useActionState(
-    submitContactEnquiry,
-    initialState,
-  );
+  const [status, setStatus] = useState<Status>("idle");
+  const pending = status === "pending";
 
-  if (state.status === "success") {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setStatus("pending");
+    const form = new FormData(e.currentTarget);
+    const field = (name: string) => String(form.get(name) ?? "").trim();
+
+    const supabase = createClient();
+    const { error } = await supabase.from("contact_enquiries").insert({
+      name: field("name"),
+      email: field("email").toLowerCase(),
+      phone: field("phone") || null,
+      organisation_name: field("organisation_name") || null,
+      subject: field("subject") || null,
+      message: field("message"),
+      locale: locale === "en" ? "en" : "zh",
+    });
+    setStatus(error ? "error" : "success");
+  }
+
+  if (status === "success") {
     return (
       <div className="border-t-2 border-gold-500 pt-6">
         <p className="text-h4 font-semibold text-ink">{t("successTitle")}</p>
@@ -33,9 +50,7 @@ export function ContactForm() {
   }
 
   return (
-    <form action={formAction} className="space-y-6">
-      <input type="hidden" name="locale" value={locale} />
-
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
         <div>
           <label htmlFor="contact-name" className={labelClass}>
@@ -123,7 +138,7 @@ export function ContactForm() {
         <Button type="submit" disabled={pending}>
           {pending ? tCommon("submitting") : tCommon("submit")}
         </Button>
-        {state.status === "error" && (
+        {status === "error" && (
           <p className="text-small text-red-700">{t("errorGeneric")}</p>
         )}
       </div>

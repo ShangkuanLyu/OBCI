@@ -51,8 +51,21 @@ const OLD_PAGE_REDIRECTS: Array<[string, string]> = [
   ["/accessibility-statement", "/zh/accessibility"],
 ];
 
+// STATIC_EXPORT=1 produces a fully static build for GitHub Pages: the CI
+// workflow strips the server-only parts (admin, api, proxy) before building.
+// Server redirects don't exist on Pages, so they are skipped there too.
+const isStaticExport = process.env.STATIC_EXPORT === "1";
+
 const nextConfig: NextConfig = {
+  ...(isStaticExport
+    ? {
+        output: "export" as const,
+        trailingSlash: true,
+        basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? "",
+      }
+    : {}),
   images: {
+    unoptimized: isStaticExport,
     remotePatterns: [
       {
         protocol: "https",
@@ -62,6 +75,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async redirects() {
+    if (isStaticExport) return [];
     return [
       ...OLD_PAGE_REDIRECTS.map(([source, destination]) => ({
         source,

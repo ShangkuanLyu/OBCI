@@ -1,14 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  submitMembershipApplication,
-  type ActionState,
-} from "@/app/actions/public";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
-const initialState: ActionState = { status: "idle" };
+type Status = "idle" | "pending" | "success" | "partial" | "error";
+
+const ALLOWED_DOC_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+const MAX_DOC_BYTES = 20 * 1024 * 1024;
 
 const inputClass =
   "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-navy-800";
@@ -23,12 +29,71 @@ export function ApplyForm({
   const t = useTranslations("apply");
   const tCommon = useTranslations("common");
   const locale = useLocale();
-  const [state, formAction, pending] = useActionState(
-    submitMembershipApplication,
-    initialState,
-  );
+  const [status, setStatus] = useState<Status>("idle");
+  const pending = status === "pending";
 
-  if (state.status === "success") {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setStatus("pending");
+    const form = new FormData(e.currentTarget);
+    const field = (name: string) => String(form.get(name) ?? "").trim();
+
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("submit_membership_application", {
+      p_membership_type_code: field("membership_type_code"),
+      p_applicant_name: field("applicant_name"),
+      p_email: field("email").toLowerCase(),
+      p_phone: field("phone") || undefined,
+      p_organisation_name: field("organisation_name") || undefined,
+      p_position: field("position") || undefined,
+      p_message: field("message") || undefined,
+      p_locale: locale === "en" ? "en" : "zh",
+    });
+    if (error || !data) {
+      setStatus("error");
+      return;
+    }
+    const { application_id, access_token } = data as unknown as {
+      application_id: number;
+      access_token: string;
+    };
+
+    // Optional supporting documents → private bucket, linked via token RPC.
+    const files = form
+      .getAll("documents")
+      .filter((f): f is File => f instanceof File && f.size > 0);
+    let uploadFailed = false;
+    for (const file of files.slice(0, 10)) {
+      if (file.size > MAX_DOC_BYTES || !ALLOWED_DOC_TYPES.has(file.type)) {
+        uploadFailed = true;
+        continue;
+      }
+      const safeName = file.name.replace(/[^\w.\-一-鿿]/g, "_").slice(-100);
+      const path = `applications/${application_id}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from("member-documents")
+        .upload(path, file, { contentType: file.type });
+      if (uploadError) {
+        uploadFailed = true;
+        continue;
+      }
+      const { error: attachError } = await supabase.rpc(
+        "attach_application_document",
+        {
+          p_application_id: application_id,
+          p_access_token: access_token,
+          p_storage_path: path,
+          p_file_name: file.name.slice(0, 200),
+          p_mime_type: file.type,
+          p_size_bytes: file.size,
+        },
+      );
+      if (attachError) uploadFailed = true;
+    }
+    setStatus(uploadFailed ? "partial" : "success");
+  }
+
+  if (status === "success" || status === "partial") {
     return (
       <div className="border-t border-grey-300 pt-8">
         <h3 className="text-h3 font-semibold tracking-[-0.01em] text-ink">
@@ -37,7 +102,7 @@ export function ApplyForm({
         <p className="mt-4 max-w-[42rem] text-body leading-relaxed text-grey-600">
           {t("successText")}
         </p>
-        {state.message === "upload_partial" && (
+        {status === "partial" && (
           <p className="mt-6 text-caption text-grey-500">{t("uploadError")}</p>
         )}
       </div>
@@ -45,9 +110,7 @@ export function ApplyForm({
   }
 
   return (
-    <form action={formAction} className="grid gap-6 md:grid-cols-2">
-      <input type="hidden" name="locale" value={locale} />
-
+    <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
       <div>
         <label htmlFor="apply-type" className={labelClass}>
           {t("type")}
@@ -173,7 +236,7 @@ export function ApplyForm({
         >
           {pending ? tCommon("submitting") : t("submit")}
         </Button>
-        {state.status === "error" && (
+        {status === "error" && (
           <p className="mt-4 text-small text-red-700">{t("errorGeneric")}</p>
         )}
       </div>

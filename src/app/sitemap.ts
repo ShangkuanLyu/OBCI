@@ -1,4 +1,7 @@
 import type { MetadataRoute } from "next";
+
+export const dynamic = "force-static";
+
 import { getAllNewsSlugs } from "@/services/news";
 import { getAllEventSlugs } from "@/services/events";
 import { getChapters } from "@/services/organisation";

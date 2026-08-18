@@ -1,0 +1,110 @@
+# Static build of the public site → GitHub Pages.
+# The admin CMS, auth and the Stripe webhook need a Node host (e.g. Vercel)
+# and are stripped from this build; public forms talk to Supabase directly
+# from the browser, so they work on the static site.
+#
+# The daily schedule re-builds the site so CMS content edits reach the
+# static deployment; you can also run it manually from the Actions tab.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 21 * * *" # 07:00 Melbourne (AEST) daily content refresh
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  STATIC_EXPORT: "1"
+  NEXT_PUBLIC_BASE_PATH: /OBCI
+  NEXT_PUBLIC_SITE_URL: https://melanoau.github.io/OBCI
+  NEXT_PUBLIC_SUPABASE_URL: https://gmglssmdrsackqgkqdbu.supabase.co
+  # Publishable client key — public by design (RLS is the security boundary).
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_NM_cGTLXeLMEQ9NWLNLnjw_8QBY5xHw
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - run: npm ci
+
+      - name: Strip server-only parts for the static build
+        run: |
+          rm -f src/proxy.ts
+          rm -rf src/app/api src/app/actions
+          rm -rf "src/app/[locale]/admin" "src/app/[locale]/(site)/login"
+          rm -rf src/components/admin src/components/forms/LoginForm.tsx
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Add Pages extras (.nojekyll, root redirect, 404)
+        run: |
+          touch out/.nojekyll
+          cat > out/index.html <<'HTML'
+          <!doctype html>
+          <html lang="zh">
+            <head>
+              <meta charset="utf-8" />
+              <meta http-equiv="refresh" content="0; url=/OBCI/zh/" />
+              <link rel="canonical" href="/OBCI/zh/" />
+              <title>OBCI 大洋洲工商协会</title>
+            </head>
+            <body><a href="/OBCI/zh/">进入网站 / Enter site</a></body>
+          </html>
+          HTML
+          if [ ! -f out/404.html ]; then
+            cat > out/404.html <<'HTML'
+          <!doctype html>
+          <html lang="zh">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>404 | OBCI</title>
+              <style>body{font-family:system-ui,-apple-system,"PingFang SC",sans-serif;background:#fff;color:#1d1d1f;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center}a{color:#11254a}</style>
+            </head>
+            <body>
+              <div>
+                <h1>404</h1>
+                <p>页面不存在 / Page not found</p>
+                <p><a href="/OBCI/zh/">返回首页 / Back to home</a></p>
+              </div>
+            </body>
+          </html>
+          HTML
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
