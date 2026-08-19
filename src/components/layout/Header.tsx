@@ -40,6 +40,7 @@ export function Header() {
   const otherLocale = locale === "zh" ? "en" : "zh";
 
   return (
+    <>
     <header className="sticky top-0 z-50 border-b border-grey-100 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-[69.5rem] items-center justify-between px-6 md:px-10">
         {/* Logo lockup */}
@@ -131,11 +132,13 @@ export function Header() {
           </button>
         </div>
       </div>
+    </header>
 
-      {/* Mobile sheet */}
+      {/* Mobile sheet — rendered outside <header> because its backdrop-blur
+         creates a containing block that would collapse this fixed panel. */}
       <div
         className={cn(
-          "fixed inset-0 top-16 z-40 flex-col justify-between bg-white px-6 pb-10 pt-6 lg:hidden",
+          "fixed inset-0 top-16 z-40 flex-col justify-between overflow-y-auto bg-white px-6 pb-10 pt-6 lg:hidden",
           open ? "flex" : "hidden",
         )}
       >
@@ -163,6 +166,6 @@ export function Header() {
           {t("join")}
         </Link>
       </div>
-    </header>
+    </>
   );
 }

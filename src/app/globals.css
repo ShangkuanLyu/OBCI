@@ -104,6 +104,16 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* iOS Safari auto-zooms into focused form fields whose font-size is under
+   16px. Keep controls at ≥16px on viewports without a desktop pointer. */
+@media (max-width: 64rem) {
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+}
+
 ::selection {
   background: var(--color-royal-600);
   color: #ffffff;
