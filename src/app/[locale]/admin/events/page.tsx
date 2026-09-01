@@ -46,7 +46,7 @@ export default async function AdminEventsPage({
         </h1>
         <Link
           href={`/${locale}/admin/events/new`}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-navy-900 px-4 text-small font-medium text-white transition-colors duration-200 hover:bg-navy-800"
+          className="inline-flex h-10 items-center justify-center rounded-md bg-sea-900 px-4 text-small font-medium text-white transition-colors duration-200 hover:bg-sea-800"
         >
           {zh ? "新建" : "New"}
         </Link>
@@ -72,7 +72,7 @@ export default async function AdminEventsPage({
                   <p className="truncate text-small font-medium text-ink">
                     {title}
                     {event.is_featured && (
-                      <span className="ml-2 text-rose-400" title={zh ? "焦点活动" : "Featured"}>
+                      <span className="ml-2 text-gold-500" title={zh ? "焦点活动" : "Featured"}>
                         ★
                       </span>
                     )}

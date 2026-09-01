@@ -1,5 +1,9 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import type { Tables } from "@/types/database.types";
+import {
+  designFixturesEnabled,
+  FIXTURE_CHAPTER_NEWS_SLUGS,
+} from "@/lib/fixtures/design-review";
 
 export type NewsRow = Tables<"news">;
 export type NewsCategoryRow = Tables<"news_categories">;
@@ -8,7 +12,7 @@ export type NewsWithCategory = NewsRow & {
 };
 
 const LIST_COLUMNS =
-  "id, slug, title_zh, title_en, summary_zh, summary_en, cover_image_path, published_at, is_featured, author_name, category:news_categories(*)";
+  "id, slug, title_zh, title_en, summary_zh, summary_en, cover_image_path, published_at, updated_at, is_featured, author_name, tags, category:news_categories(*)";
 
 export async function getNewsCategories(): Promise<NewsCategoryRow[]> {
   const supabase = createPublicClient();
@@ -30,14 +34,52 @@ export async function getPublishedNews(options?: {
     .select(LIST_COLUMNS)
     .eq("status", "published")
     .order("published_at", { ascending: false });
-  if (options?.limit) query = query.limit(options.limit);
+  // The category filter runs client-side on the joined slug, so the row
+  // limit must be applied after filtering, not in the query.
+  if (options?.limit && !options.categorySlug) query = query.limit(options.limit);
   const { data, error } = await query;
   if (error) throw new Error(`getPublishedNews: ${error.message}`);
-  const rows = data as unknown as NewsWithCategory[];
+  let rows = data as unknown as NewsWithCategory[];
   if (options?.categorySlug) {
-    return rows.filter((r) => r.category?.slug === options.categorySlug);
+    rows = rows.filter((r) => r.category?.slug === options.categorySlug);
+    if (options.limit) rows = rows.slice(0, options.limit);
   }
   return rows;
+}
+
+/**
+ * News associated with an industry chapter. Association is by tag
+ * (`tags` contains the chapter slug) so one article can belong to
+ * several industries. The design-review preview uses a fixed mapping
+ * of real published articles until the approved data update tags them.
+ */
+export async function getNewsByChapter(
+  chapterSlug: string,
+  limit = 3,
+): Promise<NewsWithCategory[]> {
+  const supabase = createPublicClient();
+  if (designFixturesEnabled()) {
+    const slugs = FIXTURE_CHAPTER_NEWS_SLUGS[chapterSlug] ?? [];
+    if (slugs.length === 0) return [];
+    const { data, error } = await supabase
+      .from("news")
+      .select(LIST_COLUMNS)
+      .eq("status", "published")
+      .in("slug", slugs)
+      .order("published_at", { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(`getNewsByChapter: ${error.message}`);
+    return data as unknown as NewsWithCategory[];
+  }
+  const { data, error } = await supabase
+    .from("news")
+    .select(LIST_COLUMNS)
+    .eq("status", "published")
+    .contains("tags", [chapterSlug])
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`getNewsByChapter: ${error.message}`);
+  return data as unknown as NewsWithCategory[];
 }
 
 export async function getFeaturedNews(limit = 3): Promise<NewsWithCategory[]> {

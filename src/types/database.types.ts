@@ -12,7 +12,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -241,8 +241,14 @@ export type Database = {
           is_active: boolean
           name_en: string
           name_zh: string
+          resources_en: string[]
+          resources_zh: string[]
           secretary_general: string | null
+          services_en: string[]
+          services_zh: string[]
           slug: string
+          tagline_en: string | null
+          tagline_zh: string | null
           updated_at: string
         }
         Insert: {
@@ -256,8 +262,14 @@ export type Database = {
           is_active?: boolean
           name_en: string
           name_zh: string
+          resources_en?: string[]
+          resources_zh?: string[]
           secretary_general?: string | null
+          services_en?: string[]
+          services_zh?: string[]
           slug: string
+          tagline_en?: string | null
+          tagline_zh?: string | null
           updated_at?: string
         }
         Update: {
@@ -271,8 +283,14 @@ export type Database = {
           is_active?: boolean
           name_en?: string
           name_zh?: string
+          resources_en?: string[]
+          resources_zh?: string[]
           secretary_general?: string | null
+          services_en?: string[]
+          services_zh?: string[]
           slug?: string
+          tagline_en?: string | null
+          tagline_zh?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -483,16 +501,24 @@ export type Database = {
       membership_applications: {
         Row: {
           access_token: string
+          agreed_marketing: boolean
+          agreed_terms: boolean
           applicant_name: string
           applicant_user_id: string | null
+          company_address: string | null
+          company_intro: string | null
           created_at: string
+          directory_consent: boolean
           email: string
+          fax: string | null
           id: number
           locale: string
           membership_type_id: number
           message: string | null
+          mobile: string | null
           organisation_id: number | null
           organisation_name: string | null
+          payment_method: string | null
           phone: string | null
           position: string | null
           review_note: string | null
@@ -503,16 +529,24 @@ export type Database = {
         }
         Insert: {
           access_token?: string
+          agreed_marketing?: boolean
+          agreed_terms?: boolean
           applicant_name: string
           applicant_user_id?: string | null
+          company_address?: string | null
+          company_intro?: string | null
           created_at?: string
+          directory_consent?: boolean
           email: string
+          fax?: string | null
           id?: never
           locale?: string
           membership_type_id: number
           message?: string | null
+          mobile?: string | null
           organisation_id?: number | null
           organisation_name?: string | null
+          payment_method?: string | null
           phone?: string | null
           position?: string | null
           review_note?: string | null
@@ -523,16 +557,24 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          agreed_marketing?: boolean
+          agreed_terms?: boolean
           applicant_name?: string
           applicant_user_id?: string | null
+          company_address?: string | null
+          company_intro?: string | null
           created_at?: string
+          directory_consent?: boolean
           email?: string
+          fax?: string | null
           id?: never
           locale?: string
           membership_type_id?: number
           message?: string | null
+          mobile?: string | null
           organisation_id?: number | null
           organisation_name?: string | null
+          payment_method?: string | null
           phone?: string | null
           position?: string | null
           review_note?: string | null
@@ -614,10 +656,13 @@ export type Database = {
           display_order: number
           id: number
           is_active: boolean
+          is_popular: boolean
           name_en: string
           name_zh: string
           price_annual: number | null
           stripe_price_id: string | null
+          turnover_en: string | null
+          turnover_zh: string | null
         }
         Insert: {
           benefits_en?: string[]
@@ -629,10 +674,13 @@ export type Database = {
           display_order?: number
           id?: never
           is_active?: boolean
+          is_popular?: boolean
           name_en: string
           name_zh: string
           price_annual?: number | null
           stripe_price_id?: string | null
+          turnover_en?: string | null
+          turnover_zh?: string | null
         }
         Update: {
           benefits_en?: string[]
@@ -644,10 +692,13 @@ export type Database = {
           display_order?: number
           id?: never
           is_active?: boolean
+          is_popular?: boolean
           name_en?: string
           name_zh?: string
           price_annual?: number | null
           stripe_price_id?: string | null
+          turnover_en?: string | null
+          turnover_zh?: string | null
         }
         Relationships: []
       }
@@ -1056,6 +1107,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_offerings: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: number
+          is_active: boolean
+          items_en: string[]
+          items_zh: string[]
+          name_en: string
+          name_zh: string
+          slug: string
+          summary_en: string | null
+          summary_zh: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: never
+          is_active?: boolean
+          items_en?: string[]
+          items_zh?: string[]
+          name_en: string
+          name_zh: string
+          slug: string
+          summary_en?: string | null
+          summary_zh?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: never
+          is_active?: boolean
+          items_en?: string[]
+          items_zh?: string[]
+          name_en?: string
+          name_zh?: string
+          slug?: string
+          summary_en?: string | null
+          summary_zh?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       site_settings: {
         Row: {

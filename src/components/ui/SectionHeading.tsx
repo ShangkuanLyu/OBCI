@@ -31,15 +31,15 @@ export function SectionHeading({
       {label && (
         <p
           className={cn(
-            "flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em]",
+            "flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.06em]",
             align === "center" && "justify-center",
-            dark ? "text-royal-200" : "text-royal-600",
+            dark ? "text-sea-200" : "text-sea-800",
           )}
         >
           <span
             className={cn(
               "h-0.5 w-6 rounded-full",
-              dark ? "bg-rose-400" : "bg-rose-500",
+              dark ? "bg-gold-500" : "bg-gold-600",
             )}
             aria-hidden
           />

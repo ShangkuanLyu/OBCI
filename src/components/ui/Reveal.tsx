@@ -50,9 +50,8 @@ export function Reveal({
   }, []);
 
   return (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     <Tag
-      ref={ref as any}
+      ref={ref as React.RefObject<never>}
       data-reveal=""
       style={delay ? { transitionDelay: `${delay}ms` } : undefined}
       className={className}

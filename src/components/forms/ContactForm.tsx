@@ -1,26 +1,44 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
+import { isPreviewDeployment } from "@/lib/preview";
 import { Button } from "@/components/ui/Button";
 
-type Status = "idle" | "pending" | "success" | "error";
+type Status = "idle" | "pending" | "success" | "error" | "preview";
 
 const inputClass =
-  "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-royal-500";
+  "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small transition-colors focus:border-sea-600";
 
 const labelClass = "mb-2 block text-small font-medium text-ink";
 
+/**
+ * Public enquiry form (client-side insert, RLS-guarded). A `?topic=` query
+ * parameter — used by the industry-matching and article-enquiry CTAs —
+ * prefills the subject line.
+ */
 export function ContactForm() {
   const t = useTranslations("contact");
   const tCommon = useTranslations("common");
   const locale = useLocale();
+  const searchParams = useSearchParams();
   const [status, setStatus] = useState<Status>("idle");
   const pending = status === "pending";
 
+  const topic = searchParams.get("topic");
+  const defaultSubject = topic
+    ? `${t("topicPrefix")}${locale === "zh" ? "：" : ": "}${topic}`.slice(0, 300)
+    : undefined;
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // The isolated preview deployment never writes to production.
+    if (isPreviewDeployment()) {
+      setStatus("preview");
+      return;
+    }
     setStatus("pending");
     const form = new FormData(e.currentTarget);
     const field = (name: string) => String(form.get(name) ?? "").trim();
@@ -40,7 +58,7 @@ export function ContactForm() {
 
   if (status === "success") {
     return (
-      <div className="border-t-2 border-rose-500 pt-6">
+      <div className="border-t-2 border-gold-600 pt-6" role="status">
         <p className="text-h4 font-semibold text-ink">{t("successTitle")}</p>
         <p className="mt-3 max-w-[42rem] text-body leading-relaxed text-grey-600">
           {t("successText")}
@@ -115,6 +133,7 @@ export function ContactForm() {
             name="subject"
             type="text"
             maxLength={300}
+            defaultValue={defaultSubject}
             className={inputClass}
           />
         </div>
@@ -130,7 +149,7 @@ export function ContactForm() {
           required
           rows={6}
           maxLength={5000}
-          className="w-full rounded-md border border-grey-300 bg-white px-4 py-3 text-small leading-relaxed outline-none transition-colors focus:border-royal-500"
+          className="w-full rounded-md border border-grey-300 bg-white px-4 py-3 text-small leading-relaxed transition-colors focus:border-sea-600"
         />
       </div>
 
@@ -138,9 +157,16 @@ export function ContactForm() {
         <Button type="submit" disabled={pending}>
           {pending ? tCommon("submitting") : tCommon("submit")}
         </Button>
-        {status === "error" && (
-          <p className="text-small text-red-700">{t("errorGeneric")}</p>
-        )}
+        <span aria-live="polite">
+          {status === "error" && (
+            <span className="text-small text-red-700">{t("errorGeneric")}</span>
+          )}
+          {status === "preview" && (
+            <span className="text-small text-grey-600">
+              {tCommon("previewDisabled")}
+            </span>
+          )}
+        </span>
       </div>
     </form>
   );

@@ -8,8 +8,8 @@ import type { Database } from "@/types/database.types";
 type EnquiryStatus = Database["public"]["Enums"]["enquiry_status"];
 
 const STATUS_LABELS: Record<EnquiryStatus, { zh: string; en: string; className: string }> = {
-  new: { zh: "新留言", en: "New", className: "text-rose-600" },
-  in_progress: { zh: "处理中", en: "In progress", className: "text-navy-800" },
+  new: { zh: "新留言", en: "New", className: "text-sea-700" },
+  in_progress: { zh: "处理中", en: "In progress", className: "text-sea-800" },
   closed: { zh: "已关闭", en: "Closed", className: "text-grey-500" },
 };
 
@@ -73,8 +73,8 @@ export default async function AdminEnquiriesPage({
               className={cn(
                 "rounded-md px-3 py-1.5 text-small whitespace-nowrap transition-colors",
                 active
-                  ? "bg-navy-100 font-medium text-navy-900"
-                  : "text-grey-500 hover:text-navy-900",
+                  ? "bg-sea-100 font-medium text-sea-900"
+                  : "text-grey-500 hover:text-sea-900",
               )}
             >
               {zh ? tab.zh : tab.en}

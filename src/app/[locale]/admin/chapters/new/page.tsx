@@ -18,7 +18,7 @@ export default async function NewChapterPage({
     <>
       <Link
         href={`/${locale}/admin/chapters`}
-        className="text-caption text-grey-500 transition-colors hover:text-navy-900"
+        className="text-caption text-grey-500 transition-colors hover:text-sea-900"
       >
         ← {zh ? "返回列表" : "Back to list"}
       </Link>

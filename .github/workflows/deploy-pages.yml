@@ -26,7 +26,7 @@ concurrency:
 env:
   STATIC_EXPORT: "1"
   NEXT_PUBLIC_BASE_PATH: /OBCI
-  NEXT_PUBLIC_SITE_URL: https://melanoau.github.io/OBCI
+  NEXT_PUBLIC_SITE_URL: https://shangkuanlyu.github.io/OBCI
   NEXT_PUBLIC_SUPABASE_URL: https://gmglssmdrsackqgkqdbu.supabase.co
   # Publishable client key — public by design (RLS is the security boundary).
   NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_NM_cGTLXeLMEQ9NWLNLnjw_8QBY5xHw
@@ -68,8 +68,8 @@ jobs:
             <head>
               <meta charset="utf-8" />
               <meta http-equiv="refresh" content="0; url=/OBCI/zh/" />
-              <link rel="canonical" href="/OBCI/zh/" />
-              <title>OBCI 大洋洲工商协会</title>
+              <link rel="canonical" href="https://shangkuanlyu.github.io/OBCI/zh/" />
+              <title>大洋洲工商协会 OBAI</title>
             </head>
             <body><a href="/OBCI/zh/">进入网站 / Enter site</a></body>
           </html>
@@ -81,7 +81,7 @@ jobs:
             <head>
               <meta charset="utf-8" />
               <meta name="viewport" content="width=device-width, initial-scale=1" />
-              <title>404 | OBCI</title>
+              <title>404 | OBAI</title>
               <style>body{font-family:system-ui,-apple-system,"PingFang SC",sans-serif;background:#fff;color:#1d1d1f;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center}a{color:#11254a}</style>
             </head>
             <body>

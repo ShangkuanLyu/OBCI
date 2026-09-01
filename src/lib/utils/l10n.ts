@@ -31,8 +31,30 @@ export function formatDate(
   }).format(new Date(iso));
 }
 
+/** Day-of-month in Melbourne time — keeps date chips consistent with
+ *  formatDate regardless of the build machine's timezone. */
+export function melbourneDay(iso: string | null): string {
+  if (!iso) return "";
+  return new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Melbourne",
+    day: "numeric",
+  }).format(new Date(iso));
+}
+
 /** Public URL for an object in the public `media` bucket. */
 export function mediaUrl(path: string | null): string | null {
   if (!path) return null;
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;
+}
+
+/**
+ * Image URL for content rows: a leading "/" marks a local public asset
+ * (used by the design-review preview); anything else is a storage path.
+ */
+export function imageUrl(path: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith("/")) {
+    return `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${path}`;
+  }
+  return mediaUrl(path);
 }

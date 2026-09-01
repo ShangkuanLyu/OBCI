@@ -193,7 +193,7 @@ export function NewsForm({
               type="checkbox"
               name="is_featured"
               defaultChecked={initial?.is_featured ?? false}
-              className="h-4 w-4 rounded border-grey-300 accent-navy-900"
+              className="h-4 w-4 rounded border-grey-300 accent-sea-900"
             />
             {zh ? "设为焦点新闻" : "Featured article"}
           </label>
@@ -206,7 +206,7 @@ export function NewsForm({
               name="cover_image"
               type="file"
               accept="image/*"
-              className="block w-full text-small text-grey-600 file:mr-3 file:h-9 file:rounded-md file:border file:border-grey-300 file:bg-white file:px-4 file:text-small file:font-medium file:text-navy-900 file:transition-colors hover:file:bg-grey-50"
+              className="block w-full text-small text-grey-600 file:mr-3 file:h-9 file:rounded-md file:border file:border-grey-300 file:bg-white file:px-4 file:text-small file:font-medium file:text-sea-900 file:transition-colors hover:file:bg-grey-50"
             />
           </Field>
           {initial?.cover_image_path && (

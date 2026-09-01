@@ -10,8 +10,8 @@ import type { Database } from "@/types/database.types";
 type ApplicationStatus = Database["public"]["Enums"]["application_status"];
 
 const STATUS_LABELS: Record<ApplicationStatus, { zh: string; en: string; className: string }> = {
-  submitted: { zh: "待处理", en: "Submitted", className: "text-rose-600" },
-  under_review: { zh: "审核中", en: "Under review", className: "text-navy-800" },
+  submitted: { zh: "待处理", en: "Submitted", className: "text-sea-700" },
+  under_review: { zh: "审核中", en: "Under review", className: "text-sea-800" },
   approved: { zh: "已通过", en: "Approved", className: "text-green-700" },
   rejected: { zh: "已拒绝", en: "Rejected", className: "text-red-700" },
   withdrawn: { zh: "已撤回", en: "Withdrawn", className: "text-grey-500" },
@@ -142,7 +142,7 @@ export default async function AdminApplicationDetailPage({
         </h1>
         <Link
           href={`/${locale}/admin/applications`}
-          className="text-small text-grey-500 transition-colors hover:text-navy-900"
+          className="text-small text-grey-500 transition-colors hover:text-sea-900"
         >
           {zh ? "← 返回列表" : "← Back to list"}
         </Link>
@@ -183,7 +183,7 @@ export default async function AdminApplicationDetailPage({
                         href={doc.signedUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="min-w-0 truncate text-small font-medium text-navy-800 underline-offset-2 hover:underline"
+                        className="min-w-0 truncate text-small font-medium text-sea-800 underline-offset-2 hover:underline"
                       >
                         {doc.file_name}
                       </a>

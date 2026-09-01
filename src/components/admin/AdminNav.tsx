@@ -15,10 +15,12 @@ type Item = {
 const ITEMS: Item[] = [
   { href: "", zh: "总览", en: "Dashboard" },
   { href: "/news", zh: "新闻资讯", en: "News", roles: ["admin", "editor"] },
+  { href: "/categories", zh: "资讯分类", en: "Categories", roles: ["editor"] },
   { href: "/events", zh: "活动展会", en: "Events", roles: ["admin", "editor", "event_manager"] },
   { href: "/leadership", zh: "领导团队", en: "Leadership", roles: ["admin", "editor"] },
   { href: "/chapters", zh: "行业分会", en: "Chapters", roles: ["admin", "editor"] },
   { href: "/partners", zh: "合作伙伴", en: "Partners", roles: ["admin", "editor"] },
+  { href: "/membership-types", zh: "会员类型", en: "Membership types", roles: ["membership_manager"] },
   { href: "/applications", zh: "入会申请", en: "Applications", roles: ["admin", "membership_manager"] },
   { href: "/enquiries", zh: "联络留言", en: "Enquiries", roles: ["admin", "membership_manager", "editor"] },
   { href: "/settings", zh: "站点设置", en: "Settings", roles: ["admin"] },
@@ -59,8 +61,8 @@ export function AdminNav({
               "rounded-md px-3 py-2 text-small whitespace-nowrap transition-colors",
               horizontal
                 ? active
-                  ? "bg-navy-100 font-medium text-navy-900"
-                  : "text-grey-600 hover:text-navy-900"
+                  ? "bg-sea-100 font-medium text-sea-900"
+                  : "text-grey-600 hover:text-sea-900"
                 : active
                   ? "bg-white/10 font-medium text-white"
                   : "text-white/65 hover:text-white",

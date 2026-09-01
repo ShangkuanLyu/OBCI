@@ -8,8 +8,8 @@ import type { Database } from "@/types/database.types";
 type ApplicationStatus = Database["public"]["Enums"]["application_status"];
 
 const STATUS_LABELS: Record<ApplicationStatus, { zh: string; en: string; className: string }> = {
-  submitted: { zh: "待处理", en: "Submitted", className: "text-rose-600" },
-  under_review: { zh: "审核中", en: "Under review", className: "text-navy-800" },
+  submitted: { zh: "待处理", en: "Submitted", className: "text-sea-700" },
+  under_review: { zh: "审核中", en: "Under review", className: "text-sea-800" },
   approved: { zh: "已通过", en: "Approved", className: "text-green-700" },
   rejected: { zh: "已拒绝", en: "Rejected", className: "text-red-700" },
   withdrawn: { zh: "已撤回", en: "Withdrawn", className: "text-grey-500" },
@@ -77,8 +77,8 @@ export default async function AdminApplicationsPage({
               className={cn(
                 "rounded-md px-3 py-1.5 text-small whitespace-nowrap transition-colors",
                 active
-                  ? "bg-navy-100 font-medium text-navy-900"
-                  : "text-grey-500 hover:text-navy-900",
+                  ? "bg-sea-100 font-medium text-sea-900"
+                  : "text-grey-500 hover:text-sea-900",
               )}
             >
               {zh ? tab.zh : tab.en}

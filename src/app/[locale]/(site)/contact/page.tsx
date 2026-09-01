@@ -1,10 +1,14 @@
+import { Suspense } from "react";
 import { setRequestLocale, getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { getSiteSettings, settingString } from "@/services/settings";
+import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
+import type { Json } from "@/types/database.types";
 
 export const revalidate = 300;
 
@@ -15,8 +19,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "contact" });
-  return { title: t("title"), description: t("standfirst") };
+  return pageMetadata({
+    locale,
+    path: "/contact",
+    title: t("title"),
+    description: t("standfirst"),
+  });
 }
+
+type WayItem = { href: string; label: string };
 
 export default async function ContactPage({
   params,
@@ -27,20 +38,46 @@ export default async function ContactPage({
   setRequestLocale(rawLocale);
   const locale = rawLocale as Locale;
   const t = await getTranslations("contact");
+  const zh = locale === "zh";
 
   const settings = await getSiteSettings().catch(() => ({}));
-  const address = settingString(
-    settings,
-    "contact",
-    locale === "zh" ? "address_zh" : "address_en",
-    "Melbourne VIC, Australia",
-  );
-  const phone = settingString(settings, "contact", "phone", "");
-  const email = settingString(settings, "contact", "email", "");
+  const s = (key: string, field: string, fallback = "") =>
+    settingString(settings, key, field, fallback);
+
+  const address = s("contact", zh ? "address_zh" : "address_en", "Melbourne VIC, Australia");
+  const addressLabel = s("contact", zh ? "address_label_zh" : "address_label_en", t("address"));
+  const address2 = s("contact", zh ? "address2_zh" : "address2_en");
+  const address2Label = s("contact", zh ? "address2_label_zh" : "address2_label_en");
+  const phone = s("contact", "phone");
+  const fax = s("contact", "fax");
+  const email = s("contact", "email");
+  const wechat = s("contact", zh ? "wechat_zh" : "wechat_en");
+  const membershipContactName = s("contact", "membership_contact_name");
+  const membershipContactPhone = s("contact", "membership_contact_phone");
+
+  // "Ways to work with us" — stored as a top-level array under the
+  // partner_routes settings key.
+  const routesRaw = (settings as Record<string, Json>)["partner_routes"];
+  const ways: WayItem[] = Array.isArray(routesRaw)
+    ? routesRaw
+        .filter(
+          (item): item is Record<string, Json> =>
+            typeof item === "object" && item !== null && !Array.isArray(item),
+        )
+        .map((item) => ({
+          href: typeof item.href === "string" ? item.href : "/contact",
+          label: String((zh ? item.name_zh : item.name_en) ?? ""),
+        }))
+        .filter((item) => item.label)
+    : [];
 
   const rows: { label: string; value: React.ReactNode }[] = [
-    { label: t("address"), value: address },
+    { label: addressLabel, value: address },
+    ...(address2 && address2Label
+      ? [{ label: address2Label, value: address2 }]
+      : []),
     ...(phone ? [{ label: t("phone"), value: phone }] : []),
+    ...(fax ? [{ label: t("fax"), value: fax }] : []),
     ...(email
       ? [
           {
@@ -48,7 +85,7 @@ export default async function ContactPage({
             value: (
               <a
                 href={`mailto:${email}`}
-                className="text-royal-600 transition-colors duration-200 hover:text-royal-500 hover:underline"
+                className="text-sea-800 transition-colors duration-200 hover:text-sea-600 hover:underline"
               >
                 {email}
               </a>
@@ -56,12 +93,20 @@ export default async function ContactPage({
           },
         ]
       : []),
+    ...(membershipContactName
+      ? [
+          {
+            label: t("membershipContact"),
+            value: `${membershipContactName}${membershipContactPhone ? ` · ${membershipContactPhone}` : ""}`,
+          },
+        ]
+      : []),
+    ...(wechat ? [{ label: t("wechat"), value: wechat }] : []),
   ];
 
   return (
     <>
       <PageHero
-        label="Contact"
         title={t("title")}
         standfirst={t("standfirst")}
       />
@@ -69,7 +114,7 @@ export default async function ContactPage({
       <section className="bg-white py-16 md:py-24">
         <Container>
           <div className="grid gap-y-16 md:grid-cols-12 md:gap-x-10">
-            {/* Contact details */}
+            {/* Contact details + ways to work with us */}
             <div className="md:col-span-5">
               <div className="card-surface p-7 md:p-8">
                 <h2 className="text-h4 font-semibold text-ink">
@@ -78,7 +123,7 @@ export default async function ContactPage({
                 <dl className="mt-7 space-y-6">
                   {rows.map((row) => (
                     <div key={row.label}>
-                      <dt className="text-caption font-medium uppercase tracking-[0.08em] text-royal-600">
+                      <dt className="text-caption font-medium uppercase tracking-[0.06em] text-sea-800">
                         {row.label}
                       </dt>
                       <dd className="mt-2 text-body leading-relaxed text-ink">
@@ -88,6 +133,29 @@ export default async function ContactPage({
                   ))}
                 </dl>
               </div>
+
+              {ways.length > 0 && (
+                <div className="mt-8">
+                  <h2 className="text-caption font-semibold uppercase tracking-[0.06em] text-grey-500">
+                    {t("waysTitle")}
+                  </h2>
+                  <ul className="mt-4 divide-y divide-grey-100 border-y border-grey-100">
+                    {ways.map((way) => (
+                      <li key={way.label}>
+                        <Link
+                          href={way.href}
+                          className="flex items-center justify-between py-3.5 text-body text-ink transition-colors hover:text-sea-800"
+                        >
+                          {way.label}
+                          <span aria-hidden className="text-grey-300">
+                            →
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Enquiry form */}
@@ -96,7 +164,9 @@ export default async function ContactPage({
                 {t("formTitle")}
               </h2>
               <div className="mt-8">
-                <ContactForm />
+                <Suspense fallback={null}>
+                  <ContactForm />
+                </Suspense>
               </div>
             </div>
           </div>

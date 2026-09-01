@@ -5,7 +5,9 @@ import { PageHero } from "@/components/ui/PageHero";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
 import { getLeadership } from "@/services/organisation";
+import { getContentBlocks } from "@/services/content";
 import { loc } from "@/lib/utils/l10n";
+import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -18,7 +20,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "about" });
-  return { title: t("title"), description: t("standfirst") };
+  return pageMetadata({
+    locale,
+    path: "/about",
+    title: t("title"),
+    description: t("standfirst"),
+  });
 }
 
 export default async function AboutPage({
@@ -30,13 +37,19 @@ export default async function AboutPage({
   setRequestLocale(rawLocale);
   const locale = rawLocale as Locale;
   const t = await getTranslations("about");
+  const zh = locale === "zh";
 
-  const leadership = (await getLeadership().catch(() => [])).slice(0, 4);
+  const [leadership, content] = await Promise.all([
+    getLeadership().catch(() => []),
+    getContentBlocks().catch(() => null),
+  ]);
+  const leaders = leadership.slice(0, 4);
+  const pick = (row: { text_zh: string; text_en: string }) =>
+    zh ? row.text_zh || row.text_en : row.text_en || row.text_zh;
 
   return (
     <>
       <PageHero
-        label="About OBCI"
         title={t("title")}
         standfirst={t("standfirst")}
       />
@@ -60,51 +73,73 @@ export default async function AboutPage({
         </Container>
       </section>
 
-      {/* Vision & mission — grey band, two card panels */}
+      {/* Vision & mission — quote treatment + supporting mission text */}
       <section className="bg-grey-50 py-16 md:py-24">
         <Container>
-          <SectionHeading label={t("missionLabel")} title={t("missionTitle")} />
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            <Reveal className="card-surface p-7 md:p-8">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-royal-50 text-small font-semibold text-royal-600">
-                01
-              </span>
-              <h3 className="mt-5 text-h4 font-semibold text-ink">
-                {t("visionTitle")}
-              </h3>
-              <p className="mt-3 max-w-[42rem] text-body leading-relaxed text-grey-600">
-                {t("visionText")}
-              </p>
-            </Reveal>
-            <Reveal delay={80} className="card-surface p-7 md:p-8">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-royal-50 text-small font-semibold text-royal-600">
-                02
-              </span>
-              <h3 className="mt-5 text-h4 font-semibold text-ink">
-                {t("missionTitle2")}
-              </h3>
-              <p className="mt-3 max-w-[42rem] text-body leading-relaxed text-grey-600">
-                {t("missionText")}
-              </p>
-            </Reveal>
+          <SectionHeading label={t("visionLabel")} title={t("visionTitle")} />
+          {content?.vision && (
+            <blockquote className="mt-8 max-w-[46rem] border-l-2 border-gold-600 pl-6 text-[1.35rem] font-medium leading-[1.65] tracking-[-0.01em] text-ink md:text-[1.5rem]">
+              {pick(content.vision)}
+            </blockquote>
+          )}
+          <div className="mt-12 max-w-[46rem]">
+            <h3 className="text-h4 font-semibold text-ink">
+              {t("missionTitle")}
+            </h3>
+            <p className="mt-3 text-body leading-relaxed text-grey-600">
+              {t("missionText")}
+            </p>
           </div>
         </Container>
       </section>
 
-      {/* Leadership teaser — card tiles */}
-      <section className="bg-white py-16 md:py-24">
+      {/* Four practice pillars — full editorial version */}
+      {content && content.pillars.length > 0 && (
+        <section className="bg-white py-16 md:py-24">
+          <Container>
+            <SectionHeading
+              label={t("pillarsLabel")}
+              title={t("pillarsTitle")}
+              standfirst={t("pillarsStandfirst")}
+            />
+            <ol className="mt-10 grid gap-x-14 md:grid-cols-2">
+              {content.pillars.map((pillar, i) => (
+                <li
+                  key={pillar.title_zh || i}
+                  className="grid grid-cols-[3.5rem_1fr] gap-5 border-t border-grey-100 py-7"
+                >
+                  <span className="text-h2 font-semibold tabular-nums text-grey-300">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <h3 className="text-h4 font-semibold text-ink">
+                      {zh ? pillar.title_zh : pillar.title_en}
+                    </h3>
+                    <p className="mt-2 text-body leading-relaxed text-grey-600">
+                      {pick(pillar)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </Container>
+        </section>
+      )}
+
+      {/* Leadership teaser */}
+      <section className="bg-grey-50 py-16 md:py-24">
         <Container>
           <SectionHeading
             label={t("leadershipLabel")}
             title={t("leadershipTitle")}
           />
-          {leadership.length > 0 && (
+          {leaders.length > 0 && (
             <div className="mt-10 grid grid-cols-2 gap-6 md:grid-cols-4">
-              {leadership.map((person, i) => (
+              {leaders.map((person, i) => (
                 <Reveal
                   key={person.id}
                   delay={i * 80}
-                  className="card-surface p-6"
+                  className="border-t-2 border-grey-100 pt-5"
                 >
                   <p className="text-h4 font-semibold text-ink">
                     {loc(person, "name", locale)}
@@ -118,15 +153,15 @@ export default async function AboutPage({
           )}
           <Link
             href="/about/leadership"
-            className="mt-10 inline-block text-small font-medium text-royal-600 transition-colors hover:text-royal-500"
+            className="mt-10 inline-block text-small font-medium text-sea-800 transition-colors hover:text-sea-600"
           >
             {t("viewLeadership")} →
           </Link>
         </Container>
       </section>
 
-      {/* Governance teaser — grey band */}
-      <section className="bg-grey-50 py-16 md:py-24">
+      {/* Governance teaser */}
+      <section className="bg-white py-16 md:py-24">
         <Container>
           <SectionHeading
             label={t("structureLabel")}
@@ -135,15 +170,15 @@ export default async function AboutPage({
           />
           <Link
             href="/about/structure"
-            className="mt-8 inline-block text-small font-medium text-royal-600 transition-colors hover:text-royal-500"
+            className="mt-8 inline-block text-small font-medium text-sea-800 transition-colors hover:text-sea-600"
           >
             {t("viewStructure")} →
           </Link>
         </Container>
       </section>
 
-      {/* Partnerships — light royal band */}
-      <section className="bg-royal-50 py-16 md:py-24">
+      {/* Partnerships */}
+      <section className="bg-sea-50 py-16 md:py-24">
         <Container>
           <SectionHeading
             title={t("partnershipsTitle")}

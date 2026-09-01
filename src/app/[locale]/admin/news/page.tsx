@@ -36,7 +36,7 @@ export default async function AdminNewsPage({
         </h1>
         <Link
           href={`/${locale}/admin/news/new`}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-navy-900 px-4 text-small font-medium text-white transition-colors duration-200 hover:bg-navy-800"
+          className="inline-flex h-10 items-center justify-center rounded-md bg-sea-900 px-4 text-small font-medium text-white transition-colors duration-200 hover:bg-sea-800"
         >
           {zh ? "新建" : "New"}
         </Link>
@@ -66,7 +66,7 @@ export default async function AdminNewsPage({
                     title={row.is_featured ? (zh ? "焦点" : "Featured") : undefined}
                     className={cn(
                       "h-2 w-2 shrink-0 rounded-full",
-                      row.is_featured ? "bg-rose-500" : "bg-grey-100",
+                      row.is_featured ? "bg-sea-800" : "bg-grey-100",
                     )}
                   />
                   <span className="min-w-0 flex-1 truncate text-small font-medium text-ink">

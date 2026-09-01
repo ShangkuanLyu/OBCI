@@ -1,6 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
+import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -11,13 +12,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "legal" });
-  return {
+  return pageMetadata({
+    locale,
+    path: "/accessibility",
     title: t("accessibilityTitle"),
     description:
       locale === "zh"
         ? "大洋洲工商协会网站的无障碍访问承诺与措施。"
         : "The Oceania Business Association's commitment to an accessible website.",
-  };
+  });
 }
 
 type LegalSection = { heading: string; body: string[] };
@@ -138,7 +141,7 @@ export default async function AccessibilityPage({
 
   return (
     <>
-      <PageHero label="Legal" title={t("accessibilityTitle")} />
+      <PageHero label={t("label")} title={t("accessibilityTitle")} />
 
       <section className="bg-white py-16 md:py-24">
         <Container>

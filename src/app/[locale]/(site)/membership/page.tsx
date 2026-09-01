@@ -3,9 +3,11 @@ import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ButtonLink } from "@/components/ui/Button";
-import { Reveal } from "@/components/ui/Reveal";
 import { getMembershipTypes } from "@/services/membership";
+import { getContentBlocks } from "@/services/content";
+import { getServiceOfferings } from "@/services/abs";
 import { loc } from "@/lib/utils/l10n";
+import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -18,7 +20,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "membership" });
-  return { title: t("title"), description: t("standfirst") };
+  return pageMetadata({
+    locale,
+    path: "/membership",
+    title: t("title"),
+    description: t("standfirst"),
+  });
 }
 
 function formatPrice(amount: number, currency: string, locale: Locale): string {
@@ -38,141 +45,164 @@ export default async function MembershipPage({
   setRequestLocale(rawLocale);
   const locale = rawLocale as Locale;
   const t = await getTranslations("membership");
+  const zh = locale === "zh";
 
-  const types = await getMembershipTypes().catch(() => []);
-
-  const steps = [
-    { num: "01", title: t("step1Title"), text: t("step1Text") },
-    { num: "02", title: t("step2Title"), text: t("step2Text") },
-    { num: "03", title: t("step3Title"), text: t("step3Text") },
-  ];
+  const [content, abs, types] = await Promise.all([
+    getContentBlocks().catch(() => null),
+    getServiceOfferings().catch(() => []),
+    getMembershipTypes().catch(() => []),
+  ]);
+  const pick = (row: { text_zh: string; text_en: string }) =>
+    zh ? row.text_zh || row.text_en : row.text_en || row.text_zh;
 
   return (
     <>
       <PageHero
-        label="Membership"
         title={t("title")}
         standfirst={t("standfirst")}
       />
 
-      {/* Membership types — card grid with colored top bars */}
-      <section className="bg-white py-16 md:py-24">
-        <Container>
-          <SectionHeading label={t("typesLabel")} title={t("typesTitle")} />
+      {/* Core member benefits — checklist, not cards */}
+      {content && content.memberBenefits.length > 0 && (
+        <section className="bg-white py-16 md:py-20">
+          <Container>
+            <SectionHeading
+              label={t("benefitsLabel")}
+              title={t("benefitsTitle")}
+            />
+            <ul className="mt-10 grid gap-x-12 gap-y-4 md:grid-cols-2">
+              {content.memberBenefits.map((benefit, i) => (
+                <li
+                  key={i}
+                  className="flex items-start gap-3 border-b border-grey-100 pb-4 text-body text-ink"
+                >
+                  <span
+                    className="mt-[0.7em] h-0.5 w-4 shrink-0 rounded-full bg-gold-600"
+                    aria-hidden
+                  />
+                  {pick(benefit)}
+                </li>
+              ))}
+            </ul>
+          </Container>
+        </section>
+      )}
 
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {types.map((type, i) => {
-              const primary =
-                locale === "zh" ? type.benefits_zh : type.benefits_en;
-              const fallback =
-                locale === "zh" ? type.benefits_en : type.benefits_zh;
-              const benefits =
-                primary && primary.length > 0 ? primary : (fallback ?? []);
-              const description = loc(type, "description", locale);
-              const bar = ["bg-royal-600", "bg-rose-500", "bg-royal-500"][
-                i % 3
-              ];
-
-              return (
-                <Reveal key={type.id} delay={(i % 3) * 80} className="h-full">
-                  <div className="card-surface flex h-full flex-col overflow-hidden">
-                    <span className={`block h-1.5 ${bar}`} aria-hidden />
-                    <div className="flex flex-1 flex-col p-7">
-                      <div className="pb-8">
-                        <h3 className="text-h4 font-semibold text-ink">
-                          {loc(type, "name", locale)}
-                        </h3>
-                        {description && (
-                          <p className="mt-3 text-small leading-relaxed text-grey-600">
-                            {description}
-                          </p>
-                        )}
-                        {benefits.length > 0 && (
-                          <ul className="mt-6 space-y-2.5">
-                            {benefits.map((benefit) => (
-                              <li
-                                key={benefit}
-                                className="flex gap-2.5 text-small leading-relaxed text-grey-600"
-                              >
-                                <span
-                                  className="font-semibold text-royal-600"
-                                  aria-hidden
-                                >
-                                  ✓
-                                </span>
-                                {benefit}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                      <p className="mt-auto border-t border-grey-100 pt-5">
-                        {type.price_annual !== null ? (
-                          <>
-                            <span className="text-h4 font-semibold text-ink">
-                              {formatPrice(
-                                type.price_annual,
-                                type.currency,
-                                locale,
-                              )}
-                            </span>{" "}
-                            <span className="text-caption text-grey-500">
-                              {t("perYear")}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-caption text-grey-500">
-                            {t("feeContact")}
-                          </span>
-                        )}
+      {/* ABS value-added services — layered service lists */}
+      {abs.length > 0 && (
+        <section className="bg-grey-50 py-16 md:py-20">
+          <Container>
+            <SectionHeading
+              label={t("absLabel")}
+              title={t("absTitle")}
+              standfirst={t("absStandfirst")}
+            />
+            <div className="mt-10 space-y-0">
+              {abs.map((service, i) => {
+                const items =
+                  zh && service.items_zh.length > 0
+                    ? service.items_zh
+                    : service.items_en.length > 0
+                      ? service.items_en
+                      : service.items_zh;
+                return (
+                  <article
+                    key={service.id}
+                    className="grid gap-6 border-t border-grey-100 py-10 first:border-t-0 first:pt-2 md:grid-cols-12 md:gap-14"
+                  >
+                    <div className="md:col-span-5">
+                      <p className="text-h2 font-semibold tabular-nums text-grey-300">
+                        {String(i + 1).padStart(2, "0")}
+                      </p>
+                      <h3 className="mt-3 text-h4 font-semibold text-ink">
+                        {loc(service, "name", locale)}
+                      </h3>
+                      <p className="mt-3 text-body leading-relaxed text-grey-600">
+                        {loc(service, "summary", locale)}
                       </p>
                     </div>
-                  </div>
-                </Reveal>
-              );
-            })}
-          </div>
-        </Container>
-      </section>
-
-      {/* Application process — grey band, numbered step cards */}
-      <section className="bg-grey-50 py-16 md:py-24">
-        <Container>
-          <SectionHeading label={t("processLabel")} title={t("processTitle")} />
-
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {steps.map((step, i) => (
-              <Reveal key={step.num} delay={i * 80} className="h-full">
-                <div className="card-surface h-full p-7">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-royal-50 text-small font-semibold text-royal-600">
-                    {step.num}
-                  </span>
-                  <h3 className="mt-5 text-h4 font-semibold text-ink">
-                    {step.title}
-                  </h3>
-                  <p className="mt-3 text-small leading-relaxed text-grey-600">
-                    {step.text}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </Container>
-      </section>
-
-      {/* Apply — royal call-to-action band */}
-      <section className="bg-white py-16 md:py-24">
-        <Container>
-          <div className="rounded-2xl bg-royal-600 px-8 py-10 text-center text-white md:px-14">
-            <div className="flex justify-center">
-              <ButtonLink href="/membership/apply" variant="accent">
-                {t("applyCta")}
-              </ButtonLink>
+                    <div className="md:col-span-6 md:col-start-7">
+                      <ul className="space-y-3">
+                        {items.map((item, j) => (
+                          <li
+                            key={j}
+                            className="flex items-start gap-3 text-body text-ink"
+                          >
+                            <span
+                              className="mt-[0.7em] h-0.5 w-4 shrink-0 rounded-full bg-gold-600"
+                              aria-hidden
+                            />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-            <p className="mt-5 text-caption text-white/70">{t("applyNote")}</p>
-          </div>
-        </Container>
-      </section>
+          </Container>
+        </section>
+      )}
+
+      {/* Five tiers at a glance — compact inline summary, table on Join page */}
+      {types.length > 0 && (
+        <section className="bg-white py-16 md:py-20">
+          <Container>
+            <SectionHeading
+              label={t("tiersLabel")}
+              title={t("tiersTitle")}
+              standfirst={t("tiersText")}
+            />
+            <ul className="mt-10 divide-y divide-grey-100 border-y border-grey-100">
+              {types.map((type) => (
+                <li
+                  key={type.id}
+                  className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1 py-4"
+                >
+                  <span className="flex items-baseline gap-3">
+                    <span className="text-body font-semibold text-ink">
+                      {loc(type, "name", locale)}
+                    </span>
+                    {loc(type, "turnover", locale) && (
+                      <span className="text-small text-grey-500">
+                        {loc(type, "turnover", locale)}
+                      </span>
+                    )}
+                    {type.is_popular && (
+                      <span className="rounded-full bg-gold-50 px-2.5 py-0.5 text-caption font-medium text-gold-600">
+                        {t("popular")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-body font-semibold tabular-nums text-sea-800">
+                    {type.price_annual != null
+                      ? `${formatPrice(Number(type.price_annual), type.currency, locale)} ${t("perYear")}`
+                      : t("feeContact")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-10 flex flex-wrap items-center gap-5">
+              <ButtonLink href="/membership/apply" variant="primary">
+                {t("tiersCta")}
+              </ButtonLink>
+              <p className="text-caption text-grey-500">{t("applyNote")}</p>
+            </div>
+          </Container>
+        </section>
+      )}
+
+      {/* Service-model note — quiet small print per the DOCX */}
+      {content?.revenueNote && (
+        <section className="border-t border-grey-100 bg-white pb-14">
+          <Container>
+            <p className="pt-8 text-caption leading-relaxed text-grey-500">
+              {pick(content.revenueNote)}
+            </p>
+          </Container>
+        </section>
+      )}
     </>
   );
 }

@@ -3,6 +3,7 @@ import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { getPublishedProjects } from "@/services/projects";
 import { loc, formatDate } from "@/lib/utils/l10n";
+import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -23,7 +24,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "projects" });
-  return { title: t("title"), description: t("standfirst") };
+  return pageMetadata({
+    locale,
+    path: "/projects",
+    title: t("title"),
+    description: t("standfirst"),
+  });
 }
 
 export default async function ProjectsPage({
@@ -41,7 +47,6 @@ export default async function ProjectsPage({
   return (
     <>
       <PageHero
-        label="Projects"
         title={t("title")}
         standfirst={t("standfirst")}
       />
@@ -60,7 +65,7 @@ export default async function ProjectsPage({
                   className="card-surface p-6 md:p-8"
                 >
                   <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-caption">
-                    <span className="rounded-full bg-royal-50 px-2.5 py-1 font-medium text-royal-600">
+                    <span className="rounded-full bg-sea-50 px-2.5 py-1 font-medium text-sea-800">
                       {isKnownKind(project.kind)
                         ? t(`kinds.${project.kind}`)
                         : project.kind}

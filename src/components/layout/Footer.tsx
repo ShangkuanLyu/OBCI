@@ -1,7 +1,5 @@
-import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { assetPath } from "@/lib/utils/asset";
 import { getSiteSettings, settingString } from "@/services/settings";
 
 export async function Footer() {
@@ -9,32 +7,42 @@ export async function Footer() {
   const tNav = await getTranslations("nav");
   const locale = await getLocale();
   const settings = await getSiteSettings().catch(() => ({}));
+  const zh = locale === "zh";
 
   const address = settingString(
     settings,
     "contact",
-    locale === "zh" ? "address_zh" : "address_en",
+    zh ? "address_zh" : "address_en",
     "Melbourne VIC, Australia",
   );
   const phone = settingString(settings, "contact", "phone", "");
   const email = settingString(settings, "contact", "email", "");
+  const wechat = settingString(
+    settings,
+    "contact",
+    zh ? "wechat_zh" : "wechat_en",
+    "",
+  );
 
   return (
-    <footer className="bg-navy-950 text-white">
+    <footer className="bg-sea-900 text-white">
       <div className="mx-auto w-full max-w-[69.5rem] px-6 py-16 md:px-10 md:py-20">
         <div className="grid gap-12 md:grid-cols-12">
           <div className="md:col-span-5">
-            <Image
-              src={assetPath("/logo.png")}
-              alt={locale === "zh" ? "大洋洲工商协会" : "Oceania Business Association"}
-              width={1244}
-              height={656}
-              className="h-14 w-auto"
-            />
-            <p className="mt-5 text-caption tracking-[0.08em] text-white/50">
-              {locale === "zh"
+            {/* Interim text wordmark — replaced once the official OBAI logo
+               artwork is supplied. */}
+            <p className="flex items-baseline gap-3">
+              <span className="text-h3 font-semibold tracking-[0.02em] text-white">
+                OBAI
+              </span>
+              <span className="border-l border-white/25 pl-3 text-small text-white/80">
+                {zh ? "大洋洲工商协会" : "Oceania Business Association"}
+              </span>
+            </p>
+            <p className="mt-4 text-caption tracking-[0.06em] text-white/50">
+              {zh
                 ? "OCEANIA BUSINESS ASSOCIATION INCORPORATED"
-                : "大洋洲工商协会 · OBCI"}
+                : "大洋洲工商协会"}
             </p>
             <p className="mt-5 max-w-[26rem] text-small leading-relaxed text-white/70">
               {t("mission")}
@@ -42,7 +50,7 @@ export async function Footer() {
           </div>
 
           <nav className="md:col-span-2" aria-label={t("navigation")}>
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-royal-200">
+            <p className="text-caption font-medium uppercase tracking-[0.06em] text-sea-200">
               {t("navigation")}
             </p>
             <ul className="mt-5 space-y-3 text-small text-white/70">
@@ -54,19 +62,18 @@ export async function Footer() {
           </nav>
 
           <nav className="md:col-span-2" aria-label={t("membership")}>
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-royal-200">
+            <p className="text-caption font-medium uppercase tracking-[0.06em] text-sea-200">
               {t("membership")}
             </p>
             <ul className="mt-5 space-y-3 text-small text-white/70">
               <li><Link className="transition-colors hover:text-white" href="/membership">{t("benefits")}</Link></li>
               <li><Link className="transition-colors hover:text-white" href="/membership/apply">{t("apply")}</Link></li>
-              <li><Link className="transition-colors hover:text-white" href="/projects">{tNav("projects")}</Link></li>
               <li><Link className="transition-colors hover:text-white" href="/contact">{tNav("contact")}</Link></li>
             </ul>
           </nav>
 
           <div className="md:col-span-3">
-            <p className="text-caption font-medium uppercase tracking-[0.08em] text-royal-200">
+            <p className="text-caption font-medium uppercase tracking-[0.06em] text-sea-200">
               {t("contact")}
             </p>
             <ul className="mt-5 space-y-3 text-small text-white/70">
@@ -74,11 +81,15 @@ export async function Footer() {
               {phone && <li>{phone}</li>}
               {email && (
                 <li>
-                  <a className="transition-colors hover:text-white" href={`mailto:${email}`}>
+                  <a
+                    className="transition-colors hover:text-white"
+                    href={`mailto:${email}`}
+                  >
                     {email}
                   </a>
                 </li>
               )}
+              {wechat && <li>{wechat}</li>}
             </ul>
           </div>
         </div>

@@ -2,10 +2,11 @@ import type { MetadataRoute } from "next";
 
 export const dynamic = "force-static";
 
-import { getAllNewsSlugs } from "@/services/news";
-import { getAllEventSlugs } from "@/services/events";
+import { getAllNewsSlugs, getPublishedNews } from "@/services/news";
+import { getAllEventSlugs, getPastEvents, getUpcomingEvents } from "@/services/events";
 import { getChapters } from "@/services/organisation";
 import { routing } from "@/i18n/routing";
+import { absoluteUrl } from "@/lib/seo";
 
 const STATIC_ROUTES = [
   "",
@@ -25,12 +26,24 @@ const STATIC_ROUTES = [
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.obci.org.au";
-  const [newsSlugs, eventSlugs, chapters] = await Promise.all([
-    getAllNewsSlugs().catch(() => []),
-    getAllEventSlugs().catch(() => []),
-    getChapters().catch(() => []),
-  ]);
+  const [newsSlugs, eventSlugs, chapters, news, upcoming, past] =
+    await Promise.all([
+      getAllNewsSlugs().catch(() => []),
+      getAllEventSlugs().catch(() => []),
+      getChapters().catch(() => []),
+      getPublishedNews().catch(() => []),
+      getUpcomingEvents().catch(() => []),
+      getPastEvents(500).catch(() => []),
+    ]);
+
+  // Real modification dates where the content rows carry them.
+  const modified = new Map<string, string>();
+  for (const article of news)
+    modified.set(`/news/${article.slug}`, article.updated_at ?? "");
+  for (const event of [...upcoming, ...past])
+    modified.set(`/events/${event.slug}`, event.updated_at);
+  for (const chapter of chapters)
+    modified.set(`/chapters/${chapter.slug}`, chapter.updated_at);
 
   const paths = [
     ...STATIC_ROUTES,
@@ -39,13 +52,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...chapters.map((chapter) => `/chapters/${chapter.slug}`),
   ];
 
+  // URLs use the same trailing-slash form the static export serves.
   return paths.flatMap((path) =>
     routing.locales.map((locale) => ({
-      url: `${base}/${locale}${path}`,
-      lastModified: new Date(),
+      url: absoluteUrl(locale, path || "/"),
+      lastModified: modified.get(path)
+        ? new Date(modified.get(path)!)
+        : new Date(),
       alternates: {
         languages: Object.fromEntries(
-          routing.locales.map((l) => [l, `${base}/${l}${path}`]),
+          routing.locales.map((l) => [l, absoluteUrl(l, path || "/")]),
         ),
       },
     })),

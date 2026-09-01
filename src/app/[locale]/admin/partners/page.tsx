@@ -37,7 +37,7 @@ export default async function AdminPartnersPage({
         </h1>
         <Link
           href={`/${locale}/admin/partners/new`}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-navy-900 px-4 text-small font-medium text-white transition-colors duration-200 hover:bg-navy-800"
+          className="inline-flex h-10 items-center justify-center rounded-md bg-sea-900 px-4 text-small font-medium text-white transition-colors duration-200 hover:bg-sea-800"
         >
           {zh ? "新建" : "New"}
         </Link>
@@ -72,7 +72,7 @@ export default async function AdminPartnersPage({
                     <span
                       className={
                         row.is_active
-                          ? "rounded-full bg-navy-50 px-2.5 py-0.5 text-navy-800"
+                          ? "rounded-full bg-sea-50 px-2.5 py-0.5 text-sea-800"
                           : "rounded-full bg-grey-100 px-2.5 py-0.5 text-grey-500"
                       }
                     >

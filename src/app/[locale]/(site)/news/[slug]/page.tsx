@@ -4,8 +4,12 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { getAllNewsSlugs, getNewsBySlug, getPublishedNews } from "@/services/news";
+import { ShareActions } from "@/components/news/ShareActions";
+import { ButtonLink } from "@/components/ui/Button";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
 import { renderMarkdown } from "@/lib/utils/markdown";
+import { absoluteUrl, pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -24,10 +28,14 @@ export async function generateMetadata({
   const { locale, slug } = await params;
   const article = await getNewsBySlug(slug).catch(() => null);
   if (!article) return {};
-  return {
+  const cover = mediaUrl(article.cover_image_path);
+  return pageMetadata({
+    locale,
+    path: `/news/${slug}`,
     title: loc(article, "title", locale as Locale),
     description: loc(article, "summary", locale as Locale),
-  };
+    ogImage: cover ?? undefined,
+  });
 }
 
 export default async function NewsArticlePage({
@@ -54,14 +62,33 @@ export default async function NewsArticlePage({
     .filter((a) => a.slug !== slug)
     .slice(0, 3);
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: loc(article, "title", locale),
+    description: loc(article, "summary", locale),
+    datePublished: article.published_at ?? undefined,
+    dateModified: article.updated_at,
+    author: article.author_name
+      ? { "@type": "Person", name: article.author_name }
+      : { "@type": "Organization", name: "Oceania Business Association Incorporated" },
+    publisher: {
+      "@type": "Organization",
+      name: "Oceania Business Association Incorporated",
+    },
+    image: mediaUrl(article.cover_image_path) ?? undefined,
+    mainEntityOfPage: absoluteUrl(locale, `/news/${slug}`),
+  };
+
   return (
     <>
+      <JsonLd data={articleJsonLd} />
       {/* Article header — light editorial */}
-      <section className="border-b border-grey-100 bg-royal-50">
+      <section className="border-b border-grey-100 bg-sea-50">
         <Container className="pb-12 pt-12 md:pb-14 md:pt-16">
           <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-caption">
             {article.category && (
-              <span className="rounded-full bg-white px-2.5 py-1 font-medium text-royal-600">
+              <span className="rounded-full bg-white px-2.5 py-1 font-medium text-sea-800">
                 {loc(article.category, "name", locale)}
               </span>
             )}
@@ -81,7 +108,7 @@ export default async function NewsArticlePage({
       <article className="bg-white py-14 md:py-20">
         <Container>
           {mediaUrl(article.cover_image_path) && (
-            <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-royal-50">
+            <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-sea-50">
               <Image
                 src={mediaUrl(article.cover_image_path)!}
                 alt=""
@@ -94,7 +121,7 @@ export default async function NewsArticlePage({
           )}
           <div className="mx-auto max-w-[42rem]">
             {bodyIsFallback && (
-              <p className="mb-8 rounded-lg bg-royal-50 px-4 py-3 text-small text-royal-700">
+              <p className="mb-8 rounded-lg bg-sea-50 px-4 py-3 text-small text-sea-700">
                 {locale === "zh" ? tCommon("englishOnly") : tCommon("chineseOnly")}
               </p>
             )}
@@ -110,12 +137,33 @@ export default async function NewsArticlePage({
                 <a
                   href={article.source_url}
                   rel="noopener noreferrer"
-                  className="underline decoration-grey-300 underline-offset-4 hover:text-royal-600"
+                  className="underline decoration-grey-300 underline-offset-4 hover:text-sea-800"
                 >
                   {article.source_url}
                 </a>
               </p>
             )}
+
+            {/* Share + member-enquiry entry */}
+            <div className="mt-12 space-y-8 border-t border-grey-300 pt-8">
+              <ShareActions />
+              <div className="rounded-xl bg-sea-50 p-6">
+                <h2 className="text-body font-semibold text-ink">
+                  {t("consultTitle")}
+                </h2>
+                <p className="mt-1.5 text-small text-grey-600">
+                  {t("consultText")}
+                </p>
+                <div className="mt-4">
+                  <ButtonLink
+                    href={`/contact?topic=${encodeURIComponent(loc(article, "title", locale))}`}
+                    variant="secondary"
+                  >
+                    {t("consultCta")}
+                  </ButtonLink>
+                </div>
+              </div>
+            </div>
           </div>
         </Container>
       </article>
@@ -128,7 +176,7 @@ export default async function NewsArticlePage({
               <h2 className="text-h4 font-semibold text-ink">{t("related")}</h2>
               <Link
                 href="/news"
-                className="text-small font-medium text-royal-600 transition-colors hover:text-royal-500"
+                className="text-small font-medium text-sea-800 transition-colors hover:text-sea-600"
               >
                 {t("backToNews")} →
               </Link>
@@ -143,7 +191,7 @@ export default async function NewsArticlePage({
                   <p className="text-caption text-grey-500">
                     {formatDate(item.published_at, locale)}
                   </p>
-                  <h3 className="mt-3 text-body font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-royal-600">
+                  <h3 className="mt-3 text-body font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-sea-800">
                     {loc(item, "title", locale)}
                   </h3>
                 </Link>

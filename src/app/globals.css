@@ -1,41 +1,40 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   OBCI design tokens — light institutional design language
-   Brand: royal blue #213E8C (primary) · bright blue #2A70DE · rose #C84869
-   Deep indigo #05053E is reserved for the footer. Surfaces are white and
-   light blue tints; cards carry hairline borders and soft shadows.
+   OBAI design tokens — international-business institutional language.
+   Brand: deep sea blue #10305B (primary) · interactive blue #1D4E94 ·
+   restrained institutional gold #A8842C (kicker rules and honours only).
+   Surfaces are white and silver-grey tints; cards carry hairline borders
+   and one soft elevation.
 --------------------------------------------------------------------------- */
 
 @theme {
-  /* Deep indigo — footer + rare dark accents */
-  --color-navy-950: #030327;
-  --color-navy-900: #05053e;
-  --color-navy-800: #101060;
-  --color-navy-100: #e9ebf5;
+  /* Deep sea blue — primary brand colour */
+  --color-sea-950: #081a33;
+  --color-sea-900: #0b2240;
+  --color-sea-800: #10305b;
+  --color-sea-700: #163e76;
+  --color-sea-600: #1d4e94;
+  --color-sea-500: #3a73c4;
+  --color-sea-200: #a9c2e4;
+  --color-sea-100: #dee8f4;
+  --color-sea-50: #eff4fa;
 
-  /* Royal blue — primary brand colour */
-  --color-royal-700: #1b3373;
-  --color-royal-600: #213e8c;
-  --color-royal-500: #2a70de;
-  --color-royal-200: #a9c0f0;
-  --color-royal-100: #dce7f8;
-  --color-royal-50: #eef3fb;
+  /* Institutional gold — kicker rules and honours accents only.
+     Contrast is too low for body text or buttons; never use as a fill
+     behind text or as a button colour. */
+  --color-gold-600: #a8842c;
+  --color-gold-500: #c9a557;
+  --color-gold-100: #f0e7d3;
+  --color-gold-50: #f8f4ea;
 
-  /* Rose — accent for membership CTAs, chips, highlights */
-  --color-rose-600: #b03a5a;
-  --color-rose-500: #c84869;
-  --color-rose-400: #de7b95;
-  --color-rose-100: #f9e7ec;
-  --color-rose-50: #fdf3f6;
-
-  /* Neutrals */
-  --color-ink: #16182d;
-  --color-grey-50: #f6f7fa;
-  --color-grey-100: #e9ebf1;
-  --color-grey-300: #d3d6df;
-  --color-grey-500: #666b7d;
-  --color-grey-600: #4b5065;
+  /* Silver-grey neutrals (slightly cool-biased toward the sea hue) */
+  --color-ink: #131a24;
+  --color-grey-50: #f5f7f9;
+  --color-grey-100: #e3e8ee;
+  --color-grey-300: #c9d0d9;
+  --color-grey-500: #6d7787;
+  --color-grey-600: #525e70;
 
   /* Semantic */
   --color-background: #ffffff;
@@ -51,16 +50,16 @@
   --text-display--line-height: 1.08;
   --text-display--letter-spacing: -0.02em;
   --text-h1: 3rem;
-  --text-h1--line-height: 1.1;
+  --text-h1--line-height: 1.12;
   --text-h1--letter-spacing: -0.02em;
   --text-h2: 2.25rem;
-  --text-h2--line-height: 1.15;
+  --text-h2--line-height: 1.18;
   --text-h2--letter-spacing: -0.015em;
   --text-h3: 1.75rem;
-  --text-h3--line-height: 1.2;
+  --text-h3--line-height: 1.22;
   --text-h3--letter-spacing: -0.01em;
   --text-h4: 1.3125rem;
-  --text-h4--line-height: 1.3;
+  --text-h4--line-height: 1.35;
   --text-body-lg: 1.1875rem;
   --text-body-lg--line-height: 1.55;
   --text-body: 1.0625rem;
@@ -69,7 +68,7 @@
   --text-small--line-height: 1.5;
   --text-caption: 0.8125rem;
   --text-caption--line-height: 1.4;
-  --text-caption--letter-spacing: 0.08em;
+  --text-caption--letter-spacing: 0.06em;
 
   /* Layout */
   --container-site: 69.5rem;
@@ -80,6 +79,12 @@
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
 
+  /* Elevation (the one card shadow + its hover deepening) */
+  --shadow-card:
+    0 1px 2px rgba(8, 26, 51, 0.04), 0 10px 30px -18px rgba(8, 26, 51, 0.18);
+  --shadow-card-hover:
+    0 2px 4px rgba(8, 26, 51, 0.06), 0 16px 40px -16px rgba(8, 26, 51, 0.25);
+
   /* Motion */
   --ease-out-quiet: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
@@ -89,9 +94,7 @@
   background: #ffffff;
   border: 1px solid var(--color-grey-100);
   border-radius: 1rem;
-  box-shadow:
-    0 1px 2px rgba(5, 5, 62, 0.04),
-    0 10px 30px -18px rgba(5, 5, 62, 0.18);
+  box-shadow: var(--shadow-card);
 }
 
 body {
@@ -102,6 +105,31 @@ body {
   line-height: var(--text-body--line-height);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Visible keyboard focus everywhere. Individual controls may add their own
+   ring, but nothing is allowed to remove focus visibility. */
+:focus-visible {
+  outline: 2px solid var(--color-sea-600);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip link — hidden until focused. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100%;
+  z-index: 100;
+  border-radius: 0.5rem;
+  background: var(--color-sea-800);
+  color: #ffffff;
+  padding: 0.6rem 1rem;
+  font-size: var(--text-small);
+  transition: top 0.15s ease-out;
+}
+.skip-link:focus-visible {
+  top: 1rem;
 }
 
 /* iOS Safari auto-zooms into focused form fields whose font-size is under
@@ -115,7 +143,7 @@ body {
 }
 
 ::selection {
-  background: var(--color-royal-600);
+  background: var(--color-sea-800);
   color: #ffffff;
 }
 

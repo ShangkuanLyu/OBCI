@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils/cn";
 
 const inputClass =
-  "h-10 w-full rounded-md border border-grey-300 bg-white px-3 text-small outline-none transition-colors focus:border-navy-800";
+  "h-10 w-full rounded-md border border-grey-300 bg-white px-3 text-small outline-none transition-colors focus:border-sea-800";
 
 export function Field({
   label,
@@ -40,7 +40,7 @@ export function TextArea(props: React.ComponentProps<"textarea">) {
       rows={props.rows ?? 6}
       {...props}
       className={cn(
-        "w-full rounded-md border border-grey-300 bg-white px-3 py-2 text-small outline-none transition-colors focus:border-navy-800",
+        "w-full rounded-md border border-grey-300 bg-white px-3 py-2 text-small outline-none transition-colors focus:border-sea-800",
         props.className,
       )}
     />
@@ -63,7 +63,7 @@ export function AdminButton({
       {...props}
       className={cn(
         "inline-flex h-10 items-center justify-center rounded-md px-4 text-small font-medium transition-colors duration-200 disabled:opacity-50",
-        variant === "primary" && "bg-navy-900 text-white hover:bg-navy-800",
+        variant === "primary" && "bg-sea-900 text-white hover:bg-sea-800",
         variant === "quiet" && "border border-grey-300 text-ink hover:bg-grey-50",
         variant === "danger" && "border border-red-300 text-red-700 hover:bg-red-50",
         className,

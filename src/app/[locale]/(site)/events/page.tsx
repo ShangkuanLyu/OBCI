@@ -5,7 +5,8 @@ import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { getPastEvents, getUpcomingEvents } from "@/services/events";
 import type { EventRow } from "@/services/events";
-import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
+import { loc, formatDate, melbourneDay, mediaUrl } from "@/lib/utils/l10n";
+import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -18,7 +19,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "events" });
-  return { title: t("title"), description: t("standfirst") };
+  return pageMetadata({
+    locale,
+    path: "/events",
+    title: t("title"),
+    description: t("standfirst"),
+  });
 }
 
 /** One event — card row with royal date chip + thumbnail (home pattern). */
@@ -28,11 +34,11 @@ function EventItem({ event, locale }: { event: EventRow; locale: Locale }) {
   return (
     <Link
       href={`/events/${event.slug}`}
-      className="card-surface group grid grid-cols-[4.5rem_1fr] items-center gap-5 p-5 transition-shadow duration-300 hover:shadow-[0_2px_4px_rgba(5,5,62,0.06),0_16px_40px_-16px_rgba(5,5,62,0.25)] md:grid-cols-[4.5rem_1fr_9rem] md:gap-6"
+      className="card-surface group grid grid-cols-[4.5rem_1fr] items-center gap-5 p-5 transition-shadow duration-300 hover:shadow-card-hover md:grid-cols-[4.5rem_1fr_9rem] md:gap-6"
     >
-      <p className="flex h-[4.5rem] flex-col items-center justify-center rounded-xl bg-royal-600 text-white">
-        <span className="text-h3 font-semibold leading-none">
-          {new Date(event.starts_at).getDate()}
+      <p className="flex h-[4.5rem] flex-col items-center justify-center rounded-xl bg-sea-800 text-white">
+        <span className="text-h3 font-semibold leading-none tabular-nums">
+          {melbourneDay(event.starts_at)}
         </span>
         <span className="mt-1 text-[0.6875rem] tracking-[0.04em] text-white/75">
           {formatDate(event.starts_at, locale, {
@@ -42,7 +48,7 @@ function EventItem({ event, locale }: { event: EventRow; locale: Locale }) {
         </span>
       </p>
       <div>
-        <h3 className="text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-royal-600">
+        <h3 className="text-h4 font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-sea-800">
           {loc(event, "title", locale)}
         </h3>
         {location && (
@@ -82,7 +88,6 @@ export default async function EventsIndexPage({
   return (
     <>
       <PageHero
-        label="Events"
         title={t("title")}
         standfirst={t("standfirst")}
       />
@@ -116,7 +121,7 @@ export default async function EventsIndexPage({
         <section
           className={
             upcoming.length > 0
-              ? "border-t border-grey-100 bg-royal-50 py-16 md:py-24"
+              ? "border-t border-grey-100 bg-sea-50 py-16 md:py-24"
               : "bg-white py-16 md:py-24"
           }
         >

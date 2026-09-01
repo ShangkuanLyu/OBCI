@@ -4,7 +4,8 @@ import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { Reveal } from "@/components/ui/Reveal";
 import { getLeadership } from "@/services/organisation";
-import { loc, mediaUrl } from "@/lib/utils/l10n";
+import { imageUrl, loc } from "@/lib/utils/l10n";
+import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -25,7 +26,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "leadership" });
-  return { title: t("title"), description: t("standfirst") };
+  return pageMetadata({
+    locale,
+    path: "/about/leadership",
+    title: t("title"),
+    description: t("standfirst"),
+  });
 }
 
 export default async function LeadershipPage({
@@ -53,16 +59,16 @@ export default async function LeadershipPage({
           <div className="space-y-16 md:space-y-20">
             {groups.map((group) => (
               <div key={group.key}>
-                <p className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em] text-royal-600">
+                <p className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em] text-sea-800">
                   <span
-                    className="h-0.5 w-6 rounded-full bg-rose-500"
+                    className="h-0.5 w-6 rounded-full bg-sea-800"
                     aria-hidden
                   />
                   {t(`groups.${group.key}`)}
                 </p>
                 <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-3">
                   {group.people.map((person, i) => {
-                    const portrait = mediaUrl(person.portrait_path);
+                    const portrait = imageUrl(person.portrait_path);
                     const name = loc(person, "name", locale);
                     const bio = loc(person, "bio", locale);
                     return (
@@ -77,7 +83,7 @@ export default async function LeadershipPage({
                             alt={name}
                             width={480}
                             height={600}
-                            className="aspect-[4/5] w-full bg-royal-50 object-cover"
+                            className="aspect-[4/5] w-full bg-sea-50 object-cover"
                           />
                         )}
                         <div className="p-6">

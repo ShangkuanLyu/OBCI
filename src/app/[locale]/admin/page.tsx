@@ -47,7 +47,7 @@ export default async function AdminDashboardPage({
             className="bg-white p-6 transition-colors hover:bg-grey-50"
           >
             <p className="text-caption text-grey-500">{stat.label}</p>
-            <p className="mt-2 text-h2 font-semibold text-navy-900">
+            <p className="mt-2 text-h2 font-semibold text-sea-900">
               {stat.value}
             </p>
           </Link>

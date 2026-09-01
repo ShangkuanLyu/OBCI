@@ -4,10 +4,12 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { ButtonLink } from "@/components/ui/Button";
-import { getAllEventSlugs, getEventBySlug } from "@/services/events";
+import { eventIsUpcoming, getAllEventSlugs, getEventBySlug } from "@/services/events";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
 import { renderMarkdown } from "@/lib/utils/markdown";
 import { cn } from "@/lib/utils/cn";
+import { absoluteUrl, pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -26,10 +28,13 @@ export async function generateMetadata({
   const { locale, slug } = await params;
   const event = await getEventBySlug(slug).catch(() => null);
   if (!event) return {};
-  return {
+  return pageMetadata({
+    locale,
+    path: `/events/${slug}`,
     title: loc(event, "title", locale as Locale),
     description: loc(event, "summary", locale as Locale),
-  };
+    ogImage: mediaUrl(event.cover_image_path) ?? undefined,
+  });
 }
 
 export default async function EventDetailPage({
@@ -53,15 +58,35 @@ export default async function EventDetailPage({
   const summary = loc(event, "summary", locale);
   const body = loc(event, "body", locale);
   const cover = mediaUrl(event.cover_image_path);
-  const isFuture = new Date(event.starts_at).getTime() > Date.now();
+  const isFuture = eventIsUpcoming(event);
+
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: loc(event, "title", locale),
+    description: summary || undefined,
+    startDate: event.starts_at,
+    endDate: event.ends_at ?? undefined,
+    eventStatus: "https://schema.org/EventScheduled",
+    location: location
+      ? { "@type": "Place", name: location }
+      : undefined,
+    organizer: {
+      "@type": "Organization",
+      name: "Oceania Business Association Incorporated",
+    },
+    image: cover ?? undefined,
+    url: absoluteUrl(locale, `/events/${slug}`),
+  };
 
   return (
     <>
+      <JsonLd data={eventJsonLd} />
       {/* Event header — light editorial */}
-      <section className="border-b border-grey-100 bg-royal-50">
+      <section className="border-b border-grey-100 bg-sea-50">
         <Container className="pb-12 pt-12 md:pb-14 md:pt-16">
           <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-caption">
-            <span className="rounded-full bg-white px-2.5 py-1 font-medium text-royal-600">
+            <span className="rounded-full bg-white px-2.5 py-1 font-medium text-sea-800">
               {dateRange}
             </span>
             {location && <span className="text-grey-500">· {location}</span>}
@@ -80,7 +105,7 @@ export default async function EventDetailPage({
       <article className="bg-white py-14 md:py-20">
         <Container>
           {cover && (
-            <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-royal-50">
+            <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-sea-50">
               <Image
                 src={cover}
                 alt=""
@@ -106,9 +131,9 @@ export default async function EventDetailPage({
                   href={event.registration_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-11 items-center justify-center rounded-lg bg-rose-500 px-6 text-small font-medium text-white transition-colors duration-200 hover:bg-rose-600"
+                  className="inline-flex h-11 items-center justify-center rounded-lg bg-sea-800 px-6 text-small font-medium text-white transition-colors duration-200 hover:bg-sea-700"
                 >
-                  {t("registerInterest")}
+                  {t("registerExternal")}
                 </a>
               ) : isFuture ? (
                 <ButtonLink href="/contact" variant="primary">
@@ -124,7 +149,7 @@ export default async function EventDetailPage({
             <p className="mt-12 border-t border-grey-300 pt-6">
               <Link
                 href="/events"
-                className="text-small font-medium text-royal-600 transition-colors hover:text-royal-500"
+                className="text-small font-medium text-sea-800 transition-colors hover:text-sea-600"
               >
                 ← {t("backToEvents")}
               </Link>

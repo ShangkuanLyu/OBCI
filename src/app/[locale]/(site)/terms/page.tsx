@@ -1,6 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
+import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
@@ -11,13 +12,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "legal" });
-  return {
+  return pageMetadata({
+    locale,
+    path: "/terms",
     title: t("termsTitle"),
     description:
       locale === "zh"
         ? "大洋洲工商协会网站的使用条款与条件。"
         : "Terms and conditions governing the use of the Oceania Business Association website.",
-  };
+  });
 }
 
 type LegalSection = { heading: string; body: string[] };
@@ -150,7 +153,7 @@ export default async function TermsPage({
 
   return (
     <>
-      <PageHero label="Legal" title={t("termsTitle")} />
+      <PageHero label={t("label")} title={t("termsTitle")} />
 
       <section className="bg-white py-16 md:py-24">
         <Container>

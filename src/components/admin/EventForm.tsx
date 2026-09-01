@@ -205,7 +205,7 @@ export function EventForm({
                 type="checkbox"
                 name="is_featured"
                 defaultChecked={event?.is_featured ?? false}
-                className="h-4 w-4 accent-navy-900"
+                className="h-4 w-4 accent-sea-900"
               />
               {zh ? "焦点活动" : "Featured"}
             </label>
@@ -214,7 +214,7 @@ export function EventForm({
                 type="checkbox"
                 name="registration_open"
                 defaultChecked={event?.registration_open ?? false}
-                className="h-4 w-4 accent-navy-900"
+                className="h-4 w-4 accent-sea-900"
               />
               {zh ? "开放报名" : "Registration open"}
             </label>

@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm({ locale }: { locale: string }) {
+  const t = useTranslations("login");
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,11 +23,7 @@ export function LoginForm({ locale }: { locale: string }) {
       password,
     });
     if (signInError) {
-      setError(
-        locale === "zh"
-          ? "登录失败，请检查邮箱与密码。"
-          : "Sign-in failed. Check your email and password.",
-      );
+      setError(t("error"));
       setPending(false);
       return;
     }
@@ -34,13 +32,16 @@ export function LoginForm({ locale }: { locale: string }) {
   }
 
   const inputClass =
-    "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small outline-none transition-colors focus:border-royal-500";
+    "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small transition-colors focus:border-sea-600";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="login-email" className="mb-2 block text-small font-medium text-ink">
-          {locale === "zh" ? "电子邮箱" : "Email"}
+        <label
+          htmlFor="login-email"
+          className="mb-2 block text-small font-medium text-ink"
+        >
+          {t("email")}
         </label>
         <input
           id="login-email"
@@ -53,8 +54,11 @@ export function LoginForm({ locale }: { locale: string }) {
         />
       </div>
       <div>
-        <label htmlFor="login-password" className="mb-2 block text-small font-medium text-ink">
-          {locale === "zh" ? "密码" : "Password"}
+        <label
+          htmlFor="login-password"
+          className="mb-2 block text-small font-medium text-ink"
+        >
+          {t("password")}
         </label>
         <input
           id="login-password"
@@ -66,13 +70,15 @@ export function LoginForm({ locale }: { locale: string }) {
           className={inputClass}
         />
       </div>
-      {error && <p className="text-small text-red-700">{error}</p>}
+      <p aria-live="polite">
+        {error && <span className="text-small text-red-700">{error}</span>}
+      </p>
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-11 w-full items-center justify-center rounded-md bg-royal-600 text-small font-medium text-white transition-colors duration-200 hover:bg-royal-700 disabled:opacity-50"
+        className="inline-flex h-11 w-full items-center justify-center rounded-md bg-sea-800 text-small font-medium text-white transition-colors duration-200 hover:bg-sea-700 disabled:opacity-50"
       >
-        {locale === "zh" ? "登录" : "Sign in"}
+        {t("submit")}
       </button>
     </form>
   );

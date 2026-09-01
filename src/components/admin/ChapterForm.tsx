@@ -79,6 +79,28 @@ export function ChapterForm({
             />
           </Field>
           <Field
+            label={`${zh ? "一句话定位" : "Tagline"} 中文`}
+            htmlFor="tagline_zh"
+          >
+            <TextInput
+              id="tagline_zh"
+              name="tagline_zh"
+              maxLength={300}
+              defaultValue={item?.tagline_zh ?? ""}
+            />
+          </Field>
+          <Field
+            label={`${zh ? "一句话定位" : "Tagline"} EN`}
+            htmlFor="tagline_en"
+          >
+            <TextInput
+              id="tagline_en"
+              name="tagline_en"
+              maxLength={300}
+              defaultValue={item?.tagline_en ?? ""}
+            />
+          </Field>
+          <Field
             label={`${zh ? "简介" : "Description"} 中文`}
             htmlFor="description_zh"
           >
@@ -100,6 +122,54 @@ export function ChapterForm({
               rows={6}
               maxLength={5000}
               defaultValue={item?.description_en ?? ""}
+            />
+          </Field>
+          <Field
+            label={`${zh ? "本地资源（每行一条）" : "Local resources (one per line)"} 中文`}
+            htmlFor="resources_zh"
+          >
+            <TextArea
+              id="resources_zh"
+              name="resources_zh"
+              rows={4}
+              maxLength={3000}
+              defaultValue={(item?.resources_zh ?? []).join("\n")}
+            />
+          </Field>
+          <Field
+            label={`${zh ? "本地资源（每行一条）" : "Local resources (one per line)"} EN`}
+            htmlFor="resources_en"
+          >
+            <TextArea
+              id="resources_en"
+              name="resources_en"
+              rows={4}
+              maxLength={3000}
+              defaultValue={(item?.resources_en ?? []).join("\n")}
+            />
+          </Field>
+          <Field
+            label={`${zh ? "ABS 行业服务（每行一条）" : "ABS industry services (one per line)"} 中文`}
+            htmlFor="services_zh"
+          >
+            <TextArea
+              id="services_zh"
+              name="services_zh"
+              rows={4}
+              maxLength={3000}
+              defaultValue={(item?.services_zh ?? []).join("\n")}
+            />
+          </Field>
+          <Field
+            label={`${zh ? "ABS 行业服务（每行一条）" : "ABS industry services (one per line)"} EN`}
+            htmlFor="services_en"
+          >
+            <TextArea
+              id="services_en"
+              name="services_en"
+              rows={4}
+              maxLength={3000}
+              defaultValue={(item?.services_en ?? []).join("\n")}
             />
           </Field>
         </div>
@@ -148,7 +218,7 @@ export function ChapterForm({
             type="checkbox"
             name="is_active"
             defaultChecked={item ? item.is_active : true}
-            className="h-4 w-4 rounded border-grey-300 accent-navy-900"
+            className="h-4 w-4 rounded border-grey-300 accent-sea-900"
           />
           {zh ? "启用显示" : "Active"}
         </label>

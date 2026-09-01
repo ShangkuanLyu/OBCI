@@ -159,7 +159,7 @@ export function LeadershipForm({
             type="checkbox"
             name="is_active"
             defaultChecked={item ? item.is_active : true}
-            className="h-4 w-4 rounded border-grey-300 accent-navy-900"
+            className="h-4 w-4 rounded border-grey-300 accent-sea-900"
           />
           {zh ? "启用显示" : "Active"}
         </label>
