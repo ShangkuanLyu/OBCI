@@ -3,8 +3,10 @@ import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { Reveal } from "@/components/ui/Reveal";
+import { ReviewNote } from "@/components/ui/ReviewNote";
 import { getChapters } from "@/services/organisation";
 import { loc } from "@/lib/utils/l10n";
+import { countWord } from "@/lib/utils/count-word";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
@@ -18,11 +20,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "chapters" });
+  const chapters = await getChapters().catch(() => []);
   return pageMetadata({
     locale,
     path: "/chapters",
     title: t("title"),
-    description: t("standfirst"),
+    description: t("standfirst", {
+      count: countWord(chapters.length, locale as Locale),
+    }),
   });
 }
 
@@ -38,12 +43,17 @@ export default async function ChaptersPage({
   const tCommon = await getTranslations("common");
 
   const chapters = await getChapters().catch(() => []);
+  const taglinesPending =
+    chapters.length > 0 &&
+    chapters.every((chapter) => !loc(chapter, "tagline", locale));
 
   return (
     <>
       <PageHero
         title={t("title")}
-        standfirst={t("standfirst")}
+        standfirst={t("standfirst", {
+          count: countWord(chapters.length, locale),
+        })}
       />
 
       <section className="bg-white py-16 md:py-24">
@@ -52,12 +62,14 @@ export default async function ChaptersPage({
             <p className="text-body text-grey-500">{t("empty")}</p>
           )}
 
-          {/* Modular industry cards (per the DOCX brief). */}
+          {/* Renders only in the review deployment. */}
+          {taglinesPending && <ReviewNote className="mb-8" />}
+
+          {/* Modular industry cards (per the DOCX brief); any number of
+              active chapters renders. */}
           <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
             {chapters.map((chapter, i) => {
-              const tagline =
-                loc(chapter, "tagline", locale) ||
-                loc(chapter, "description", locale);
+              const tagline = loc(chapter, "tagline", locale);
               return (
                 <Reveal key={chapter.id} delay={(i % 3) * 80}>
                   <Link

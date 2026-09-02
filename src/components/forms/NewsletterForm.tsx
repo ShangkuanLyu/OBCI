@@ -1,26 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
-import { isPreviewDeployment } from "@/lib/preview";
+import { submissionsDisabled } from "@/lib/preview";
+import { PreviewFormNotice } from "@/components/forms/PreviewFormNotice";
 
-type Status = "idle" | "pending" | "success" | "error" | "preview";
+type Status = "idle" | "pending" | "success" | "error";
+
+const NOTICE_ID = "newsletter-preview-notice";
 
 export function NewsletterForm() {
   const t = useTranslations("newsletter");
   const tCommon = useTranslations("common");
   const locale = useLocale();
+  const disabled = submissionsDisabled();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const successRef = useRef<HTMLParagraphElement>(null);
+  const done = status === "success";
 
-  async function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (done) successRef.current?.focus();
+  }, [done]);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // The isolated preview deployment never writes to production.
-    if (isPreviewDeployment()) {
-      setStatus("preview");
-      return;
-    }
+    if (disabled) return;
     setStatus("pending");
     const supabase = createClient();
     const { error } = await supabase.from("newsletter_subscribers").insert({
@@ -36,48 +42,70 @@ export function NewsletterForm() {
     setStatus("success");
   }
 
-  if (status === "success") {
-    return (
-      <p className="text-small text-grey-600" role="status">
-        {t("success")}
-      </p>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="max-w-md">
-      <div className="flex gap-3">
-        <label className="sr-only" htmlFor="newsletter-email">
-          {t("placeholder")}
-        </label>
-        <input
-          id="newsletter-email"
-          name="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t("placeholder")}
-          className="h-11 flex-1 rounded-md border border-grey-300 bg-white px-4 text-small transition-colors focus:border-sea-600"
-        />
-        <button
-          type="submit"
-          disabled={status === "pending"}
-          className="inline-flex h-11 items-center rounded-md bg-sea-800 px-5 text-small font-medium text-white transition-colors duration-200 hover:bg-sea-700 disabled:opacity-50"
-        >
-          {t("subscribe")}
-        </button>
+    <div className="max-w-md">
+      {/* Mounted before the submission so the confirmation is announced. */}
+      <div role="status" aria-live="polite">
+        {done && (
+          <p
+            ref={successRef}
+            tabIndex={-1}
+            className="text-small text-grey-600"
+          >
+            {t("success")}
+          </p>
+        )}
       </div>
-      <p aria-live="polite" className="mt-2">
-        {status === "error" && (
-          <span className="text-small text-red-700">{t("error")}</span>
-        )}
-        {status === "preview" && (
-          <span className="text-small text-grey-600">
-            {tCommon("previewDisabled")}
-          </span>
-        )}
-      </p>
-    </form>
+
+      {!done && (
+        <>
+          {disabled && (
+            <div className="mb-4">
+              <PreviewFormNotice id={NOTICE_ID} />
+            </div>
+          )}
+          <form
+            method="post"
+            action=""
+            noValidate={false}
+            onSubmit={handleSubmit}
+            aria-describedby={disabled ? NOTICE_ID : undefined}
+          >
+            <fieldset
+              disabled={disabled}
+              className="contents m-0 min-w-0 border-0 p-0"
+            >
+              <div className="flex gap-3">
+                <label className="sr-only" htmlFor="newsletter-email">
+                  {t("placeholder")}
+                </label>
+                <input
+                  id="newsletter-email"
+                  name="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t("placeholder")}
+                  className="h-11 flex-1 rounded-md border border-grey-300 bg-white px-4 text-small transition-colors focus:border-sea-600 disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={status === "pending" || disabled}
+                  className="inline-flex h-11 items-center rounded-md bg-sea-800 px-5 text-small font-medium text-white transition-colors duration-200 hover:bg-sea-700 disabled:opacity-50"
+                >
+                  {disabled ? tCommon("previewSubmitDisabled") : t("subscribe")}
+                </button>
+              </div>
+              <p aria-live="polite" className="mt-2">
+                {status === "error" && (
+                  <span className="text-small text-red-700">{t("error")}</span>
+                )}
+              </p>
+            </fieldset>
+          </form>
+        </>
+      )}
+    </div>
   );
 }

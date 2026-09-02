@@ -2,9 +2,22 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { ButtonLink } from "@/components/ui/Button";
+import { ReviewNote } from "@/components/ui/ReviewNote";
 import { ApplyForm } from "@/components/forms/ApplyForm";
 import { getMembershipTypes } from "@/services/membership";
 import { getSiteSettings, settingString } from "@/services/settings";
+import {
+  contactFieldState,
+  contactHasPendingFields,
+  legalStatus,
+  type ContactField,
+} from "@/lib/review";
+import {
+  isInternalReview,
+  isPreviewDeployment,
+  submissionsDisabled,
+} from "@/lib/preview";
 import { loc } from "@/lib/utils/l10n";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
@@ -33,6 +46,12 @@ function formatPrice(amount: number, locale: Locale): string {
   }).format(amount);
 }
 
+const PENDING_CONTACT_FIELDS: ContactField[] = [
+  "address",
+  "email",
+  "membership_contact",
+];
+
 export default async function ApplyPage({
   params,
 }: {
@@ -43,6 +62,7 @@ export default async function ApplyPage({
   const locale = rawLocale as Locale;
   const t = await getTranslations("apply");
   const tContact = await getTranslations("contact");
+  const tCommon = await getTranslations("common");
   const zh = locale === "zh";
 
   const [types, settings] = await Promise.all([
@@ -54,30 +74,52 @@ export default async function ApplyPage({
     label: loc(type, "name", locale),
   }));
 
+  // Applications are accepted only against approved legal texts. Without
+  // them there is nothing lawful to consent to, so production shows the
+  // pending card instead; review builds still show the (disabled) form.
+  const legal = legalStatus(settings);
+  const disabled = submissionsDisabled();
+  const showForm = legal.approved || disabled;
+
   const validityNote = settingString(
     settings,
     "membership",
     zh ? "validity_note_zh" : "validity_note_en",
     t("feeValidity"),
   );
-  const contactName = settingString(
-    settings,
-    "contact",
+
+  // Contact details are published only once the chamber confirms them
+  // (site_settings.contact.confirmed_fields); the local internal-review
+  // build shows unconfirmed values with a "pending" marker.
+  const pendingFields = new Set<ContactField>();
+  const contactField = (field: ContactField, key: string) => {
+    const state = contactFieldState(settings, field);
+    if (state === "hidden") return "";
+    const value = settingString(settings, "contact", key, "");
+    if (value && state === "pending") pendingFields.add(field);
+    return value;
+  };
+  const contactName = contactField(
+    "membership_contact",
     "membership_contact_name",
-    "",
   );
-  const contactPhone = settingString(
-    settings,
-    "contact",
+  const contactPhone = contactField(
+    "membership_contact",
     "membership_contact_phone",
-    "",
   );
-  const contactEmail = settingString(settings, "contact", "email", "");
-  const contactAddress = settingString(
-    settings,
-    "contact",
+  const contactEmail = contactField("email", "email");
+  const contactAddress = contactField(
+    "address",
     zh ? "address_zh" : "address_en",
-    "",
+  );
+  const hasContact = Boolean(contactName || contactEmail || contactAddress);
+  const contactPending =
+    isPreviewDeployment() &&
+    contactHasPendingFields(settings, PENDING_CONTACT_FIELDS);
+  const pendingBadge = (
+    <span className="ml-2 inline-block rounded-full border border-grey-300 px-2 py-0.5 align-middle text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-grey-500">
+      {tCommon("pendingConfirmation")}
+    </span>
   );
 
   const steps = [1, 2, 3, 4] as const;
@@ -170,10 +212,38 @@ export default async function ApplyPage({
         <Container>
           <div className="grid gap-12 md:grid-cols-12 md:gap-16">
             <div className="md:col-span-7">
-              <SectionHeading title={t("formTitle")} />
-              <div className="mt-10">
-                <ApplyForm types={typeOptions} />
-              </div>
+              {!legal.approved && (
+                <div className="card-surface p-7 md:p-8">
+                  <h2 className="text-h4 font-semibold text-ink">
+                    {t("legalPendingTitle")}
+                  </h2>
+                  <p className="mt-3 text-body leading-relaxed text-grey-600">
+                    {t("legalPendingText")}
+                  </p>
+                  <ButtonLink
+                    href="/contact"
+                    variant="secondary"
+                    className="mt-6"
+                  >
+                    {tCommon("contactUs")}
+                  </ButtonLink>
+                  <ReviewNote className="mt-6">
+                    {t("legalPendingReviewNote")}
+                  </ReviewNote>
+                </div>
+              )}
+              {showForm && (
+                <div className={legal.approved ? undefined : "mt-12"}>
+                  <SectionHeading title={t("formTitle")} />
+                  <div className="mt-10">
+                    <ApplyForm
+                      types={typeOptions}
+                      policyVersion={legal.policyVersion}
+                      constitutionHref={legal.constitutionHref}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <aside className="md:col-span-4 md:col-start-9">
               {/* Payment — process description only. No account details or
@@ -186,41 +256,52 @@ export default async function ApplyPage({
                   {t("paymentText")}
                 </p>
               </div>
-              {(contactName || contactEmail) && (
+              {(hasContact || contactPending) && (
                 <div className="card-surface mt-6 p-6">
                   <h2 className="text-body font-semibold text-ink">
                     {t("contactTitle")}
                   </h2>
-                  <ul className="mt-3 space-y-2 text-small text-grey-600">
-                    {contactName && (
-                      <li className="font-medium text-ink">
-                        {contactName}
-                        {contactPhone && (
-                          <span className="ml-2 font-normal text-grey-600">
-                            {contactPhone}
+                  {hasContact && (
+                    <ul className="mt-3 space-y-2 text-small text-grey-600">
+                      {contactName && (
+                        <li className="font-medium text-ink">
+                          {contactName}
+                          {contactPhone && (
+                            <span className="ml-2 font-normal text-grey-600">
+                              {contactPhone}
+                            </span>
+                          )}
+                          {pendingFields.has("membership_contact") && pendingBadge}
+                        </li>
+                      )}
+                      {contactEmail && (
+                        <li>
+                          <a
+                            href={`mailto:${contactEmail}`}
+                            className="text-sea-800 transition-colors hover:text-sea-600"
+                          >
+                            {contactEmail}
+                          </a>
+                          {pendingFields.has("email") && pendingBadge}
+                        </li>
+                      )}
+                      {contactAddress && (
+                        <li>
+                          <span className="block text-caption text-grey-500">
+                            {tContact("address")}
                           </span>
-                        )}
-                      </li>
-                    )}
-                    {contactEmail && (
-                      <li>
-                        <a
-                          href={`mailto:${contactEmail}`}
-                          className="text-sea-800 transition-colors hover:text-sea-600"
-                        >
-                          {contactEmail}
-                        </a>
-                      </li>
-                    )}
-                    {contactAddress && (
-                      <li>
-                        <span className="block text-caption text-grey-500">
-                          {tContact("address")}
-                        </span>
-                        {contactAddress}
-                      </li>
-                    )}
-                  </ul>
+                          {contactAddress}
+                          {pendingFields.has("address") && pendingBadge}
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                  {contactPending && (
+                    <ReviewNote className="mt-4">
+                      {tContact("detailsPending")}
+                      {isInternalReview() && ` ${tCommon("internalReviewOnly")}`}
+                    </ReviewNote>
+                  )}
                 </div>
               )}
             </aside>

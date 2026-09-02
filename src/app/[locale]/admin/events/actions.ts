@@ -40,6 +40,10 @@ const eventSchema = z
       .max(500)
       .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v)),
     capacity: z.coerce.number().int().min(1).max(1000000).optional(),
+    // Industry chapter slugs (events.tags); the checkbox values come from
+    // the active chapters, so only the slug shape is validated here.
+    tags: z.array(z.string().trim().min(1).max(100).regex(SLUG_PATTERN)).max(20),
+    tags_editable: z.boolean(),
   })
   .refine(
     (d) =>
@@ -70,6 +74,10 @@ function readEventFields(formData: FormData) {
     registration_open: formData.get("registration_open") === "on",
     registration_url: str("registration_url"),
     capacity: str("capacity") || undefined,
+    tags: formData
+      .getAll("tags")
+      .filter((value): value is string => typeof value === "string"),
+    tags_editable: formData.get("tags_editable") === "1",
   };
 }
 
@@ -99,6 +107,9 @@ function validationMessage(error: z.ZodError, zh: boolean): string {
   if (path === "capacity") {
     return zh ? "名额需为正整数" : "Capacity must be a positive whole number";
   }
+  if (path === "tags") {
+    return zh ? "行业分会标签无效" : "Invalid industry chapter tag";
+  }
   return zh
     ? "请检查表单内容后重试"
     : "Please check the form fields and try again";
@@ -114,6 +125,38 @@ function dbMessage(code: string | undefined, zh: boolean): string {
       : "Cannot delete: the event has linked records (e.g. registrations)";
   }
   return zh ? "保存失败，请重试" : "Save failed, please try again";
+}
+
+/** PostgREST rejects unknown payload keys with PGRST204 (schema cache);
+ *  Postgres itself reports a missing column as 42703. */
+function isUndefinedColumn(code: string | undefined): boolean {
+  return code === "42703" || code === "PGRST204";
+}
+
+type WriteResult = PromiseLike<{
+  error: { code: string; message: string } | null;
+}>;
+
+/**
+ * Pre-migration fallback for `events.tags`: the column is added by
+ * supabase/migrations/20260902120000_application_form_v2.sql, which is not
+ * applied to production yet (and is absent from the generated types, hence
+ * the cast). The write is attempted with tags first; if the database
+ * rejects it for an undefined column it is retried once without them so
+ * the rest of the event still saves. `tags` is undefined when the form was
+ * rendered without the chapter checkboxes, in which case existing tags are
+ * left untouched.
+ */
+async function writeWithTags<T extends object>(
+  run: (values: T) => WriteResult,
+  values: T,
+  tags: string[] | undefined,
+) {
+  const { error } = await run(tags ? ({ ...values, tags } as T) : values);
+  if (error && tags && isUndefinedColumn(error.code)) {
+    return (await run(values)).error;
+  }
+  return error;
 }
 
 const ALLOWED_IMAGE_TYPES = new Set([
@@ -182,26 +225,30 @@ export async function createEvent(
     return { status: "error", message: cover.errorMessage };
   }
 
-  const { error } = await supabase.from("events").insert({
-    slug: d.slug,
-    title_zh: d.title_zh,
-    title_en: d.title_en || null,
-    summary_zh: d.summary_zh || null,
-    summary_en: d.summary_en || null,
-    body_zh: d.body_zh || null,
-    body_en: d.body_en || null,
-    location_zh: d.location_zh || null,
-    location_en: d.location_en || null,
-    starts_at: d.starts_at,
-    ends_at: d.ends_at || null,
-    status: d.status,
-    is_featured: d.is_featured,
-    registration_open: d.registration_open,
-    registration_url: d.registration_url || null,
-    capacity: d.capacity ?? null,
-    cover_image_path: cover.path,
-    created_by: session.userId,
-  });
+  const error = await writeWithTags(
+    (values) => supabase.from("events").insert(values),
+    {
+      slug: d.slug,
+      title_zh: d.title_zh,
+      title_en: d.title_en || null,
+      summary_zh: d.summary_zh || null,
+      summary_en: d.summary_en || null,
+      body_zh: d.body_zh || null,
+      body_en: d.body_en || null,
+      location_zh: d.location_zh || null,
+      location_en: d.location_en || null,
+      starts_at: d.starts_at,
+      ends_at: d.ends_at || null,
+      status: d.status,
+      is_featured: d.is_featured,
+      registration_open: d.registration_open,
+      registration_url: d.registration_url || null,
+      capacity: d.capacity ?? null,
+      cover_image_path: cover.path,
+      created_by: session.userId,
+    },
+    d.tags_editable ? Array.from(new Set(d.tags)) : undefined,
+  );
   if (error) {
     return { status: "error", message: dbMessage(error.code, zh) };
   }
@@ -235,9 +282,9 @@ export async function updateEvent(
     return { status: "error", message: cover.errorMessage };
   }
 
-  const { error } = await supabase
-    .from("events")
-    .update({
+  const error = await writeWithTags(
+    (values) => supabase.from("events").update(values).eq("id", id),
+    {
       slug: d.slug,
       title_zh: d.title_zh,
       title_en: d.title_en || null,
@@ -256,8 +303,9 @@ export async function updateEvent(
       capacity: d.capacity ?? null,
       updated_at: new Date().toISOString(),
       ...(cover.path ? { cover_image_path: cover.path } : {}),
-    })
-    .eq("id", id);
+    },
+    d.tags_editable ? Array.from(new Set(d.tags)) : undefined,
+  );
   if (error) {
     return { status: "error", message: dbMessage(error.code, zh) };
   }

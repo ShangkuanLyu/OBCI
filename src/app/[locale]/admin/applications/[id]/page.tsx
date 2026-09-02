@@ -4,10 +4,26 @@ import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils/cn";
-import { ApplicationReview } from "@/components/admin/ApplicationReview";
+import {
+  ApplicationReview,
+  type ConsentSummary,
+} from "@/components/admin/ApplicationReview";
 import type { Database } from "@/types/database.types";
 
 type ApplicationStatus = Database["public"]["Enums"]["application_status"];
+
+/** Columns added by the application_form_v2 migration. They are absent
+ *  (undefined) until it is applied, so every read below tolerates that. */
+type ApplicationV2Columns = Partial<{
+  first_name: string | null;
+  last_name: string | null;
+  company_intro_zh: string | null;
+  company_intro_en: string | null;
+  agreed_constitution: boolean;
+  agreed_privacy: boolean;
+  consent_at: string | null;
+  policy_version: string | null;
+}>;
 
 const STATUS_LABELS: Record<ApplicationStatus, { zh: string; en: string; className: string }> = {
   submitted: { zh: "待处理", en: "Submitted", className: "text-sea-700" },
@@ -71,18 +87,37 @@ export default async function AdminApplicationDetailPage({
     hour: "2-digit",
     minute: "2-digit",
   };
-  const formatDate = (value: string | null) =>
+  const formatDate = (value: string | null | undefined) =>
     value
       ? new Date(value).toLocaleString(zh ? "zh-CN" : "en-GB", dateFormat)
       : "—";
+  const v2 = application as typeof application & ApplicationV2Columns;
+  const preWrap = (value: string | null | undefined) =>
+    value ? <span className="whitespace-pre-wrap">{value}</span> : "—";
+
+  const consent: ConsentSummary = {
+    directoryConsent: application.directory_consent,
+    agreedConstitution: v2.agreed_constitution,
+    agreedTerms: application.agreed_terms,
+    agreedPrivacy: v2.agreed_privacy,
+    agreedMarketing: application.agreed_marketing,
+    consentAt: formatDate(v2.consent_at),
+    policyVersion: v2.policy_version,
+  };
 
   const details: { label: string; value: React.ReactNode }[] = [
     { label: zh ? "申请人" : "Applicant", value: application.applicant_name },
     { label: zh ? "邮箱" : "Email", value: application.email },
+    { label: zh ? "手机" : "Mobile", value: application.mobile ?? "—" },
     { label: zh ? "电话" : "Phone", value: application.phone ?? "—" },
+    { label: zh ? "传真" : "Fax", value: application.fax ?? "—" },
     {
       label: zh ? "机构名称" : "Organisation",
       value: application.organisation_name ?? "—",
+    },
+    {
+      label: zh ? "公司地址" : "Company address",
+      value: application.company_address ?? "—",
     },
     { label: zh ? "职位" : "Position", value: application.position ?? "—" },
     {
@@ -94,12 +129,26 @@ export default async function AdminApplicationDetailPage({
         : "—",
     },
     {
+      label: zh ? "企业简介（中文）" : "Introduction (Chinese)",
+      value: preWrap(v2.company_intro_zh),
+    },
+    {
+      label: zh ? "企业简介（英文）" : "Introduction (English)",
+      value: preWrap(v2.company_intro_en),
+    },
+    // Legacy merged introduction, shown only for rows that predate the
+    // per-language columns.
+    ...(!v2.company_intro_zh && !v2.company_intro_en && application.company_intro
+      ? [
+          {
+            label: zh ? "企业简介" : "Introduction",
+            value: preWrap(application.company_intro),
+          },
+        ]
+      : []),
+    {
       label: zh ? "申请留言" : "Message",
-      value: application.message ? (
-        <span className="whitespace-pre-wrap">{application.message}</span>
-      ) : (
-        "—"
-      ),
+      value: preWrap(application.message),
     },
     { label: zh ? "提交语言" : "Locale", value: application.locale },
     {
@@ -126,11 +175,7 @@ export default async function AdminApplicationDetailPage({
     },
     {
       label: zh ? "审核备注" : "Review note",
-      value: application.review_note ? (
-        <span className="whitespace-pre-wrap">{application.review_note}</span>
-      ) : (
-        "—"
-      ),
+      value: preWrap(application.review_note),
     },
   ];
 
@@ -218,6 +263,7 @@ export default async function AdminApplicationDetailPage({
                 locale={locale}
                 currentStatus={application.status}
                 currentNote={application.review_note}
+                consent={consent}
               />
             </div>
           </section>

@@ -34,8 +34,8 @@ export async function generateMetadata({
       template: "%s | OBAI",
     },
     description: zh
-      ? "大洋洲工商协会（OBAI）——搭建中澳及大洋洲多边商业互通枢纽，赋能企业跨境成长。"
-      : "Oceania Business Association (OBAI) — a multilateral business hub linking China, Australia and Oceania, empowering cross-border growth.",
+      ? "大洋洲工商协会（OBAI）——搭建中澳及大洋洲多边商业互通枢纽，赋能中国企业轻资产出海、澳洲企业拓展亚太市场。"
+      : "Oceania Business Association (OBAI) — a multilateral business hub linking China, Australia and Oceania, enabling Chinese enterprises to go global asset-light and Australian businesses to expand into the Asia-Pacific.",
   };
 }
 
@@ -57,8 +57,22 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={`${geistSans.variable} antialiased`}>
+    <html
+      lang={locale}
+      className={`${geistSans.variable} antialiased`}
+      data-preview={isPreviewDeployment() ? "" : undefined}
+      // data-js is added by the inline script below before hydration.
+      suppressHydrationWarning
+    >
       <body className="min-h-dvh flex flex-col">
+        {/* Marks the document as JS-capable before first paint so the
+            scroll-reveal hidden state (globals.css) never applies to a
+            no-JS render. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: 'document.documentElement.setAttribute("data-js","");',
+          }}
+        />
         <JsonLd data={organizationJsonLd(siteUrl())} />
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>

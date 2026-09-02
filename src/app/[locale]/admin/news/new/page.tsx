@@ -14,10 +14,17 @@ export default async function AdminNewsNewPage({
   const zh = locale === "zh";
 
   const supabase = await createClient();
-  const { data: categories } = await supabase
-    .from("news_categories")
-    .select("id, name_zh, name_en")
-    .order("display_order", { ascending: true });
+  const [{ data: categories }, { data: chapters }] = await Promise.all([
+    supabase
+      .from("news_categories")
+      .select("id, name_zh, name_en")
+      .order("display_order", { ascending: true }),
+    supabase
+      .from("industry_chapters")
+      .select("slug, name_zh, name_en")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true }),
+  ]);
 
   return (
     <>
@@ -29,6 +36,10 @@ export default async function AdminNewsNewPage({
           categories={(categories ?? []).map((category) => ({
             id: category.id,
             name: zh ? category.name_zh : category.name_en,
+          }))}
+          chapters={(chapters ?? []).map((chapter) => ({
+            slug: chapter.slug,
+            name: zh ? chapter.name_zh : chapter.name_en,
           }))}
           initial={null}
           locale={locale}

@@ -16,6 +16,8 @@ import type { BannerData } from "@/lib/fixtures/design-review";
 
 const AUTOPLAY_MS = 7000;
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+const TITLE_CLASS =
+  "mt-5 max-w-[16em] text-[2rem] font-semibold leading-[1.2] tracking-[-0.02em] md:text-[2.9rem] md:leading-[1.16]";
 
 function subscribeReducedMotion(onChange: () => void) {
   const query = window.matchMedia(REDUCED_MOTION_QUERY);
@@ -122,11 +124,19 @@ export function HeroCarousel({ banners }: { banners: BannerData[] }) {
                     className="h-0.5 w-6 rounded-full bg-gold-500"
                     aria-hidden
                   />
-                  {tCommon("orgNameEn")}
+                  <span lang={zh ? "en" : "zh"}>{tCommon("orgNameEn")}</span>
                 </p>
-                <h1 className="mt-5 max-w-[16em] text-[2rem] font-semibold leading-[1.2] tracking-[-0.02em] md:text-[2.9rem] md:leading-[1.16]">
-                  {zh ? banner.title_zh : banner.title_en}
-                </h1>
+                {/* One <h1> per page: only the first slide's title is the
+                    page heading; later slides carry the same styling. */}
+                {i === 0 ? (
+                  <h1 className={TITLE_CLASS}>
+                    {zh ? banner.title_zh : banner.title_en}
+                  </h1>
+                ) : (
+                  <p className={TITLE_CLASS}>
+                    {zh ? banner.title_zh : banner.title_en}
+                  </p>
+                )}
                 <p className="mt-6 max-w-[36rem] text-body-lg leading-relaxed text-white/80">
                   {zh ? banner.text_zh : banner.text_en}
                 </p>

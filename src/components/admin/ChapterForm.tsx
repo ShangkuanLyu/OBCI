@@ -1,5 +1,7 @@
 "use client";
 
+import { FormStatus } from "@/components/admin/Field";
+
 import { useActionState } from "react";
 import {
   Field,
@@ -14,6 +16,7 @@ import {
   type ActionState,
 } from "@/app/[locale]/admin/chapters/actions";
 import type { Tables } from "@/types/database.types";
+import type { ChapterExtras } from "@/lib/fixtures/design-review";
 
 const initialState: ActionState = { status: "idle" };
 
@@ -22,7 +25,8 @@ export function ChapterForm({
   item,
 }: {
   locale: string;
-  item?: Tables<"industry_chapters">;
+  /** experts_* / certifications_* arrive once the pending migration lands. */
+  item?: Tables<"industry_chapters"> & ChapterExtras;
 }) {
   const zh = locale === "zh";
   const [state, formAction, pending] = useActionState(
@@ -149,6 +153,55 @@ export function ChapterForm({
             />
           </Field>
           <Field
+            label={`${zh ? "专家顾问（每行一条）" : "Expert advisers (one per line)"} 中文`}
+            htmlFor="experts_zh"
+          >
+            <TextArea
+              id="experts_zh"
+              name="experts_zh"
+              rows={4}
+              maxLength={3000}
+              defaultValue={(item?.experts_zh ?? []).join("\n")}
+            />
+          </Field>
+          <Field
+            label={`${zh ? "专家顾问（每行一条）" : "Expert advisers (one per line)"} EN`}
+            htmlFor="experts_en"
+          >
+            <TextArea
+              id="experts_en"
+              name="experts_en"
+              rows={4}
+              maxLength={3000}
+              defaultValue={(item?.experts_en ?? []).join("\n")}
+            />
+          </Field>
+          <Field
+            label={`${zh ? "认证信息（每行一条）" : "Certification information (one per line)"} 中文`}
+            htmlFor="certifications_zh"
+            hint={zh ? "如 TGA、AS/NZS 等相关澳洲认证" : "e.g. TGA, AS/NZS and other relevant Australian certifications"}
+          >
+            <TextArea
+              id="certifications_zh"
+              name="certifications_zh"
+              rows={4}
+              maxLength={3000}
+              defaultValue={(item?.certifications_zh ?? []).join("\n")}
+            />
+          </Field>
+          <Field
+            label={`${zh ? "认证信息（每行一条）" : "Certification information (one per line)"} EN`}
+            htmlFor="certifications_en"
+          >
+            <TextArea
+              id="certifications_en"
+              name="certifications_en"
+              rows={4}
+              maxLength={3000}
+              defaultValue={(item?.certifications_en ?? []).join("\n")}
+            />
+          </Field>
+          <Field
             label={`${zh ? "ABS 行业服务（每行一条）" : "ABS industry services (one per line)"} 中文`}
             htmlFor="services_zh"
           >
@@ -233,9 +286,7 @@ export function ChapterForm({
                 ? "保存"
                 : "Save"}
           </AdminButton>
-          {state.status === "error" && (
-            <p className="mt-2 text-small text-red-700">{state.message}</p>
-          )}
+          <FormStatus state={state} />
         </div>
       </form>
 
@@ -260,9 +311,7 @@ export function ChapterForm({
           <AdminButton type="submit" variant="danger" disabled={deletePending}>
             {zh ? "删除" : "Delete"}
           </AdminButton>
-          {deleteState.status === "error" && (
-            <p className="mt-2 text-small text-red-700">{deleteState.message}</p>
-          )}
+          <FormStatus state={deleteState} />
         </form>
       )}
     </>

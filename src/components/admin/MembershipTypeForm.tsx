@@ -1,5 +1,7 @@
 "use client";
 
+import { FormStatus } from "@/components/admin/Field";
+
 import { useActionState } from "react";
 import {
   Field,
@@ -217,9 +219,7 @@ export function MembershipTypeForm({
               ? "保存"
               : "Save"}
         </AdminButton>
-        {state.status === "error" && (
-          <p className="mt-2 text-small text-red-700">{state.message}</p>
-        )}
+        <FormStatus state={state} />
       </div>
     </form>
   );

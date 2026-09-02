@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/cn";
+import { isPreviewDeployment } from "@/lib/preview";
+import { PreviewBanner } from "@/components/layout/PreviewBanner";
 
 /* Navigation order fixed by the redesign brief:
    Home · About OBAI · Industry Chapters · Member Services ·
@@ -51,16 +53,24 @@ function Wordmark({ locale }: { locale: string }) {
 
 export function Header() {
   const t = useTranslations("nav");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [sheetTop, setSheetTop] = useState(64);
+  const headerRef = useRef<HTMLElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const preview = isPreviewDeployment();
 
-  // Lock scroll while the mobile sheet is open. (The sheet closes via the
-  // onClick handlers on its links rather than a pathname effect.)
+  // Lock scroll while the mobile sheet is open, and anchor the sheet to
+  // the bottom of the sticky header block (banner + bar) rather than a
+  // hard-coded height.
   useEffect(() => {
     document.documentElement.style.overflow = open ? "hidden" : "";
+    if (open && headerRef.current) {
+      setSheetTop(Math.round(headerRef.current.getBoundingClientRect().bottom));
+    }
     return () => {
       document.documentElement.style.overflow = "";
     };
@@ -105,7 +115,16 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-grey-100 bg-white/95 backdrop-blur">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-50 border-b border-grey-100 bg-white/95 backdrop-blur"
+      >
+        {preview && (
+          <PreviewBanner
+            badge={tCommon("previewBadge")}
+            text={tCommon("previewBanner")}
+          />
+        )}
         <div className="mx-auto flex h-16 w-full max-w-[69.5rem] items-center justify-between px-6 md:px-10">
           <Link
             href="/"
@@ -116,7 +135,7 @@ export function Header() {
           </Link>
 
           {/* Desktop navigation */}
-          <nav className="hidden items-center lg:flex" aria-label="Main">
+          <nav className="hidden items-center lg:flex" aria-label={t("mainLabel")}>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.key}
@@ -202,12 +221,13 @@ export function Header() {
         role="dialog"
         aria-modal="true"
         aria-label={t("menu")}
+        style={{ top: sheetTop }}
         className={cn(
-          "fixed inset-0 top-16 z-40 flex-col justify-between overflow-y-auto bg-white px-6 pb-10 pt-6 lg:hidden",
+          "fixed inset-x-0 bottom-0 z-40 flex-col justify-between overflow-y-auto bg-white px-6 pb-10 pt-6 lg:hidden",
           open ? "flex" : "hidden",
         )}
       >
-        <nav aria-label="Mobile">
+        <nav aria-label={t("mobileLabel")}>
           <ul>
             {NAV_ITEMS.map((item) => (
               <li key={item.key} className="border-b border-grey-100">

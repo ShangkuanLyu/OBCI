@@ -74,21 +74,33 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async redirects() {
-    if (isStaticExport) return [];
-    return [
-      ...OLD_PAGE_REDIRECTS.map(([source, destination]) => ({
-        source,
-        destination,
-        permanent: true,
-      })),
-      ...Object.entries(OLD_POST_REDIRECTS).map(([oldSlug, newSlug]) => ({
-        source: `/post/${oldSlug}`,
-        destination: `/zh/news/${newSlug}`,
-        permanent: true,
-      })),
-    ];
+  experimental: {
+    // app/global-not-found.tsx: the 404 for URLs outside every route,
+    // rendered without the [locale] root layout.
+    globalNotFound: true,
   },
+  // `output: "export"` warns whenever redirects() is defined at all, so the
+  // method only exists on the Node config.
+  ...(isStaticExport
+    ? {}
+    : {
+        async redirects() {
+          return [
+            ...OLD_PAGE_REDIRECTS.map(([source, destination]) => ({
+              source,
+              destination,
+              permanent: true,
+            })),
+            ...Object.entries(OLD_POST_REDIRECTS).map(
+              ([oldSlug, newSlug]) => ({
+                source: `/post/${oldSlug}`,
+                destination: `/zh/news/${newSlug}`,
+                permanent: true,
+              }),
+            ),
+          ];
+        },
+      }),
 };
 
 export default withNextIntl(nextConfig);

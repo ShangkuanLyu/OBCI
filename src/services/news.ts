@@ -24,8 +24,9 @@ export async function getNewsCategories(): Promise<NewsCategoryRow[]> {
   return data;
 }
 
+/** Published articles, newest first. Category/tag/search filtering happens
+ *  client-side over this corpus (lib/news/filter), not in the query. */
 export async function getPublishedNews(options?: {
-  categorySlug?: string;
   limit?: number;
 }): Promise<NewsWithCategory[]> {
   const supabase = createPublicClient();
@@ -34,17 +35,10 @@ export async function getPublishedNews(options?: {
     .select(LIST_COLUMNS)
     .eq("status", "published")
     .order("published_at", { ascending: false });
-  // The category filter runs client-side on the joined slug, so the row
-  // limit must be applied after filtering, not in the query.
-  if (options?.limit && !options.categorySlug) query = query.limit(options.limit);
+  if (options?.limit) query = query.limit(options.limit);
   const { data, error } = await query;
   if (error) throw new Error(`getPublishedNews: ${error.message}`);
-  let rows = data as unknown as NewsWithCategory[];
-  if (options?.categorySlug) {
-    rows = rows.filter((r) => r.category?.slug === options.categorySlug);
-    if (options.limit) rows = rows.slice(0, options.limit);
-  }
-  return rows;
+  return data as unknown as NewsWithCategory[];
 }
 
 /**

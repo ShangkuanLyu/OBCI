@@ -11,7 +11,10 @@ import { getPastEvents, getUpcomingEvents } from "@/services/events";
 import { getChapters, getLeadership, getPartners } from "@/services/organisation";
 import { getContentBlocks } from "@/services/content";
 import { getServiceOfferings } from "@/services/abs";
+import { getSiteSettings } from "@/services/settings";
+import { isModuleConfirmed } from "@/lib/review";
 import { loc, formatDate, imageUrl, melbourneDay, mediaUrl } from "@/lib/utils/l10n";
+import { countWord } from "@/lib/utils/count-word";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
@@ -59,7 +62,7 @@ export default async function HomePage({
   const tMembership = await getTranslations("membership");
   const tLeadership = await getTranslations("leadership");
 
-  const [content, abs, news, upcoming, past, chapters, leadership, partners] =
+  const [content, abs, news, upcoming, past, chapters, leadership, settings] =
     await Promise.all([
       getContentBlocks().catch(() => null),
       getServiceOfferings().catch(() => []),
@@ -68,8 +71,12 @@ export default async function HomePage({
       getPastEvents(3).catch(() => []),
       getChapters().catch(() => []),
       getLeadership().catch(() => []),
-      getPartners().catch(() => []),
+      getSiteSettings().catch(() => ({})),
     ]);
+  // The partner wall is published only once the chamber confirms the list.
+  const partners = isModuleConfirmed(settings, "partners")
+    ? await getPartners().catch(() => [])
+    : [];
   const events = [...upcoming, ...past].slice(0, 3);
   const zh = locale === "zh";
   const pick = (row: { text_zh: string; text_en: string }) =>
@@ -89,7 +96,7 @@ export default async function HomePage({
           <Container className="pb-20 pt-16 md:pb-24 md:pt-24">
             <p className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.06em] text-sea-200">
               <span className="h-0.5 w-6 rounded-full bg-gold-500" aria-hidden />
-              {tCommon("orgNameEn")}
+              <span lang={locale === "zh" ? "en" : "zh"}>{tCommon("orgNameEn")}</span>
             </p>
             <h1 className="mt-5 max-w-[16em] text-[2rem] font-semibold leading-[1.2] tracking-[-0.02em] md:text-[2.9rem] md:leading-[1.16]">
               {t("heroTitle")}
@@ -161,14 +168,17 @@ export default async function HomePage({
         </section>
       )}
 
-      {/* 3 · Six industry chapters — modular cards (per the DOCX brief). */}
+      {/* 3 · Industry chapters — modular cards (per the DOCX brief); the
+             heading count comes from the published rows. */}
       {chapters.length > 0 && (
         <section className="bg-grey-50 py-18 md:py-24">
           <Container>
             <div className="flex items-end justify-between">
               <SectionHeading
                 label={t("industriesLabel")}
-                title={t("industriesTitle")}
+                title={t("industriesTitle", {
+                  count: countWord(chapters.length, locale),
+                })}
                 standfirst={t("industriesStandfirst")}
               />
               <Link
@@ -428,13 +438,22 @@ export default async function HomePage({
         </Container>
       </section>
 
-      {/* 8 · Honorary advisers + partner institutions. */}
+      {/* 8 · Honorary advisers + partner institutions (partners only once
+             confirmed; the title narrows to advisers when they are absent). */}
       {(honoraryAdvisers.length > 0 || partners.length > 0) && (
         <section className="bg-white py-18 md:py-24">
           <Container>
             <SectionHeading
-              label={t("advisorsLabel")}
-              title={t("advisorsTitle")}
+              label={
+                partners.length > 0
+                  ? t("advisorsLabel")
+                  : t("advisorsOnlyLabel")
+              }
+              title={
+                partners.length > 0
+                  ? t("advisorsTitle")
+                  : t("advisorsOnlyTitle")
+              }
             />
             {honoraryAdvisers.length > 0 && (
               <div className="mt-10 flex flex-wrap gap-x-12 gap-y-8">
@@ -446,7 +465,7 @@ export default async function HomePage({
                         <span className="relative block h-16 w-16 overflow-hidden rounded-full border border-grey-100">
                           <Image
                             src={portrait}
-                            alt={loc(person, "name", locale)}
+                            alt=""
                             fill
                             sizes="64px"
                             className="object-cover"

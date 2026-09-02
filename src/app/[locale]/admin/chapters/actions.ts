@@ -23,6 +23,10 @@ const chapterSchema = z.object({
   description_en: z.string().trim().max(5000),
   resources_zh: z.string().trim().max(3000),
   resources_en: z.string().trim().max(3000),
+  experts_zh: z.string().trim().max(3000),
+  experts_en: z.string().trim().max(3000),
+  certifications_zh: z.string().trim().max(3000),
+  certifications_en: z.string().trim().max(3000),
   services_zh: z.string().trim().max(3000),
   services_en: z.string().trim().max(3000),
   secretary_general: z.string().trim().max(200),
@@ -55,6 +59,10 @@ function parseFields(formData: FormData) {
     description_en: formData.get("description_en") ?? "",
     resources_zh: formData.get("resources_zh") ?? "",
     resources_en: formData.get("resources_en") ?? "",
+    experts_zh: formData.get("experts_zh") ?? "",
+    experts_en: formData.get("experts_en") ?? "",
+    certifications_zh: formData.get("certifications_zh") ?? "",
+    certifications_en: formData.get("certifications_en") ?? "",
     services_zh: formData.get("services_zh") ?? "",
     services_en: formData.get("services_en") ?? "",
     secretary_general: formData.get("secretary_general") ?? "",
@@ -77,6 +85,10 @@ function toRecord(
     description_en: d.description_en || null,
     resources_zh: toLines(d.resources_zh),
     resources_en: toLines(d.resources_en),
+    experts_zh: toLines(d.experts_zh),
+    experts_en: toLines(d.experts_en),
+    certifications_zh: toLines(d.certifications_zh),
+    certifications_en: toLines(d.certifications_en),
     services_zh: toLines(d.services_zh),
     services_en: toLines(d.services_en),
     secretary_general: d.secretary_general || null,
@@ -84,6 +96,60 @@ function toRecord(
     display_order: d.display_order,
     is_active: isActive,
   };
+}
+
+type ChapterRecord = ReturnType<typeof toRecord>;
+
+/** Columns added by supabase/migrations/20260902120000_application_form_v2.sql,
+ *  which is not applied to production yet; they are absent from the
+ *  generated types, hence the casts below. */
+const PENDING_COLUMNS = [
+  "experts_zh",
+  "experts_en",
+  "certifications_zh",
+  "certifications_en",
+] as const;
+
+type PendingColumn = (typeof PENDING_COLUMNS)[number];
+type BaseRecord = Omit<ChapterRecord, PendingColumn>;
+
+function withoutPendingColumns(record: ChapterRecord): BaseRecord {
+  const copy: Partial<ChapterRecord> = { ...record };
+  for (const key of PENDING_COLUMNS) delete copy[key];
+  return copy as BaseRecord;
+}
+
+/** PostgREST rejects unknown payload keys with PGRST204 (schema cache);
+ *  Postgres itself reports a missing column as 42703. */
+function isUndefinedColumn(code: string | undefined): boolean {
+  return code === "42703" || code === "PGRST204";
+}
+
+/**
+ * Pre-migration fallback: production still lacks the experts_* /
+ * certifications_* columns. The full record is written first; if the
+ * database rejects it for an undefined column, the write is retried once
+ * without those keys so editors can keep saving every other field. Once
+ * the migration is applied the first attempt succeeds and nothing is lost.
+ */
+async function writeChapter(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  record: ChapterRecord,
+  id?: number,
+) {
+  const run = async (values: BaseRecord) => {
+    const query =
+      id === undefined
+        ? supabase.from("industry_chapters").insert(values)
+        : supabase.from("industry_chapters").update(values).eq("id", id);
+    const { error } = await query;
+    return error;
+  };
+  const error = await run(record as BaseRecord);
+  if (error && isUndefinedColumn(error.code)) {
+    return run(withoutPendingColumns(record));
+  }
+  return error;
 }
 
 function saveErrorMessage(zh: boolean, code?: string) {
@@ -110,9 +176,10 @@ export async function createChapter(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("industry_chapters")
-    .insert(toRecord(parsed.data, formData.get("is_active") === "on"));
+  const error = await writeChapter(
+    supabase,
+    toRecord(parsed.data, formData.get("is_active") === "on"),
+  );
   if (error) {
     return { status: "error", message: saveErrorMessage(zh, error.code) };
   }
@@ -139,10 +206,11 @@ export async function updateChapter(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("industry_chapters")
-    .update(toRecord(parsed.data, formData.get("is_active") === "on"))
-    .eq("id", id.data);
+  const error = await writeChapter(
+    supabase,
+    toRecord(parsed.data, formData.get("is_active") === "on"),
+    id.data,
+  );
   if (error) {
     return { status: "error", message: saveErrorMessage(zh, error.code) };
   }

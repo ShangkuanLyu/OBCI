@@ -53,6 +53,38 @@ export function Select(props: React.ComponentProps<"select">) {
   );
 }
 
+/**
+ * Save/delete outcome for admin forms. Always mounted (empty while idle) so
+ * the live region exists before the message changes and is announced.
+ */
+export function FormStatus({
+  state,
+  fallback,
+  className,
+}: {
+  state: { status: string; message?: string };
+  /** Shown when the action reports an error without a message. */
+  fallback?: string;
+  className?: string;
+}) {
+  const isError = state.status === "error";
+  const isSuccess = state.status === "success";
+  const message = isError || isSuccess ? (state.message ?? fallback ?? "") : "";
+  return (
+    <p
+      role="status"
+      aria-live="polite"
+      className={cn(
+        "mt-2 text-small",
+        isError ? "text-red-700" : "text-green-700",
+        className,
+      )}
+    >
+      {message}
+    </p>
+  );
+}
+
 export function AdminButton({
   variant = "primary",
   className,

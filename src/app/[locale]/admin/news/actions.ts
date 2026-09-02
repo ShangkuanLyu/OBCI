@@ -21,6 +21,18 @@ const optionalText = (max: number) =>
     .max(max)
     .transform((v) => (v ? v : null));
 
+/** Industry tags are chapter slugs (news.tags contains the chapter slug). */
+const tagSchema = z
+  .array(
+    z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(/^[a-z0-9-]+$/),
+  )
+  .max(50)
+  .transform((tags) => Array.from(new Set(tags)));
+
 const newsSchema = z.object({
   locale: z.enum(["zh", "en"]).catch("zh"),
   slug: z
@@ -55,6 +67,8 @@ const newsSchema = z.object({
       return Number.isNaN(d.getTime()) ? null : d.toISOString();
     }),
   is_featured: z.boolean(),
+  tags: tagSchema,
+  tags_editable: z.boolean(),
 });
 
 function readFields(formData: FormData) {
@@ -63,6 +77,10 @@ function readFields(formData: FormData) {
     return typeof value === "string" ? value : "";
   };
   return {
+    tags: formData
+      .getAll("tags")
+      .filter((value): value is string => typeof value === "string"),
+    tags_editable: formData.get("tags_editable") === "1",
     locale: text("locale") || "zh",
     slug: text("slug"),
     category_id: text("category_id"),
@@ -167,6 +185,7 @@ export async function createNews(
     status: data.status,
     published_at: data.published_at,
     is_featured: data.is_featured,
+    ...(data.tags_editable ? { tags: data.tags } : {}),
     cover_image_path: coverImagePath,
     created_by: session.userId,
   };
@@ -225,6 +244,9 @@ export async function updateNews(
     status: data.status,
     published_at: data.published_at,
     is_featured: data.is_featured,
+    // Only written when the form rendered the tag checkboxes, so a save
+    // from a form without chapters never wipes existing tags.
+    ...(data.tags_editable ? { tags: data.tags } : {}),
     updated_at: new Date().toISOString(),
   };
 

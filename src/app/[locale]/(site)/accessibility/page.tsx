@@ -1,9 +1,14 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
+import { getSiteSettings } from "@/services/settings";
+import { legalDocumentVersion } from "@/lib/review";
+import { isPreviewDeployment } from "@/lib/preview";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
+
+export const revalidate = 300;
 
 export async function generateMetadata({
   params,
@@ -11,32 +16,40 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "legal" });
-  return pageMetadata({
-    locale,
-    path: "/accessibility",
-    title: t("accessibilityTitle"),
-    description:
-      locale === "zh"
-        ? "大洋洲工商协会网站的无障碍访问承诺与措施。"
-        : "The Oceania Business Association's commitment to an accessible website.",
-  });
+  const [t, settings] = await Promise.all([
+    getTranslations({ locale, namespace: "legal" }),
+    getSiteSettings().catch(() => ({})),
+  ]);
+  const approved = legalDocumentVersion(settings, "accessibility") !== null;
+  return {
+    ...pageMetadata({
+      locale,
+      path: "/accessibility",
+      title: t("accessibilityTitle"),
+      description:
+        locale === "zh"
+          ? "大洋洲工商协会网站的无障碍访问承诺与措施。"
+          : "The Oceania Business Association's commitment to an accessible website.",
+    }),
+    // An unpublished placeholder must never be indexed.
+    ...(approved ? {} : { robots: { index: false, follow: false } }),
+  };
 }
 
 type LegalSection = { heading: string; body: string[] };
 
-const sectionsZh: LegalSection[] = [
+// No audit has been carried out: every section describes practice or a
+// target, never a conformance result. `scope` is legal.accessibilityScope.
+const sectionsZh = (scope: string): LegalSection[] => [
   {
     heading: "1. 我们的承诺",
     body: [
-      "大洋洲工商协会（Oceania Business Association Incorporated）致力于让尽可能多的用户无障碍地使用本网站，无论其能力或所用技术如何。我们以《网页内容无障碍指南》（WCAG）2.1 AA 级为目标持续改进。",
+      "大洋洲工商协会（Oceania Business Association Incorporated）致力于让尽可能多的用户无障碍地使用本网站，无论其能力或所用技术如何。本网站以《网页内容无障碍指南》（WCAG）2.1 AA 级为设计与开发目标。",
     ],
   },
   {
-    heading: "2. 符合状态",
-    body: [
-      "本网站按照 WCAG 2.1 AA 级的要求设计与开发。我们定期审查网站内容与功能，并在发现问题时及时修复。",
-    ],
+    heading: "2. 声明范围",
+    body: [scope],
   },
   {
     heading: "3. 键盘操作",
@@ -47,13 +60,13 @@ const sectionsZh: LegalSection[] = [
   {
     heading: "4. 色彩与对比度",
     body: [
-      "网站配色经过对比度校验，正文与界面文字与其背景之间保持符合 AA 级要求的对比度。信息的传达不单独依赖颜色。",
+      "网站配色以 AA 级对比度为目标设计：正文与界面文字相对其背景，均以 AA 级对比度为目标。信息的传达不单独依赖颜色。",
     ],
   },
   {
     heading: "5. 文字与结构",
     body: [
-      "页面使用语义化的标题层级与地标区域，便于屏幕阅读器用户浏览；图片配有替代文字；文字可放大至 200% 而不丢失内容或功能。",
+      "页面使用语义化的标题层级与地标区域，便于屏幕阅读器用户浏览；图片配有替代文字；文字放大至 200% 而不丢失内容或功能是本网站的设计目标。",
     ],
   },
   {
@@ -65,7 +78,7 @@ const sectionsZh: LegalSection[] = [
   {
     heading: "7. 已知局限",
     body: [
-      "部分由第三方提供或历史归档的内容可能尚未完全达到上述标准。我们正在逐步排查并改进。",
+      "部分由第三方提供或历史归档的内容可能尚未完全达到上述目标。我们正在逐步排查并改进。",
     ],
   },
   {
@@ -76,18 +89,16 @@ const sectionsZh: LegalSection[] = [
   },
 ];
 
-const sectionsEn: LegalSection[] = [
+const sectionsEn = (scope: string): LegalSection[] => [
   {
     heading: "1. Our commitment",
     body: [
-      "Oceania Business Association Incorporated is committed to making this website accessible to the widest possible audience, regardless of ability or technology. We work towards conformance with the Web Content Accessibility Guidelines (WCAG) 2.1 at Level AA.",
+      "Oceania Business Association Incorporated is committed to making this website accessible to the widest possible audience, regardless of ability or technology. The site is designed and built with the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA as its target.",
     ],
   },
   {
-    heading: "2. Conformance status",
-    body: [
-      "This website is designed and built with WCAG 2.1 Level AA as its target. We review content and functionality regularly and remediate issues as they are found.",
-    ],
+    heading: "2. Scope of this statement",
+    body: [scope],
   },
   {
     heading: "3. Keyboard navigation",
@@ -98,13 +109,13 @@ const sectionsEn: LegalSection[] = [
   {
     heading: "4. Colour and contrast",
     body: [
-      "The site's colour palette has been checked for contrast, and body and interface text maintain AA-level contrast against their backgrounds. Colour is never the sole means of conveying information.",
+      "The site's colour palette is designed with AA-level contrast as its target for body and interface text against their backgrounds. Colour is not used as the sole means of conveying information.",
     ],
   },
   {
     heading: "5. Text and structure",
     body: [
-      "Pages use semantic heading levels and landmark regions to aid screen-reader navigation; images carry alternative text; and text can be enlarged to 200% without loss of content or function.",
+      "Pages use semantic heading levels and landmark regions to aid screen-reader navigation; images carry alternative text; and the site is designed with the aim that text can be enlarged to 200% without loss of content or function.",
     ],
   },
   {
@@ -116,7 +127,7 @@ const sectionsEn: LegalSection[] = [
   {
     heading: "7. Known limitations",
     body: [
-      "Some third-party or archived content may not yet fully meet the standards above. We are progressively reviewing and improving it.",
+      "Some third-party or archived content may not yet fully meet the targets above. We are progressively reviewing and improving it.",
     ],
   },
   {
@@ -135,9 +146,19 @@ export default async function AccessibilityPage({
   const { locale: rawLocale } = await params;
   setRequestLocale(rawLocale);
   const locale = rawLocale as Locale;
-  const t = await getTranslations("legal");
+  const [t, settings] = await Promise.all([
+    getTranslations("legal"),
+    getSiteSettings().catch(() => ({})),
+  ]);
 
-  const sections = locale === "zh" ? sectionsZh : sectionsEn;
+  // The text is published only once the chamber records a version
+  // (site_settings.legal.accessibility_version). Until then the draft
+  // body is visible solely in the review deployment; production shows
+  // the unpublished notice and nothing else.
+  const version = legalDocumentVersion(settings, "accessibility");
+  const showBody = version !== null || isPreviewDeployment();
+  const scope = t("accessibilityScope");
+  const sections = locale === "zh" ? sectionsZh(scope) : sectionsEn(scope);
 
   return (
     <>
@@ -146,24 +167,46 @@ export default async function AccessibilityPage({
       <section className="bg-white py-16 md:py-24">
         <Container>
           <div className="max-w-[42rem]">
-            <p className="text-caption text-grey-500">
-              {t("lastUpdated")} · 2026-08
-            </p>
-            {sections.map((section) => (
-              <div key={section.heading}>
-                <h3 className="mt-10 text-h4 font-semibold text-ink">
-                  {section.heading}
-                </h3>
-                {section.body.map((paragraph, i) => (
-                  <p
-                    key={i}
-                    className="mt-4 text-body leading-relaxed text-grey-600"
-                  >
-                    {paragraph}
-                  </p>
-                ))}
+            {version ? (
+              <p className="text-small text-grey-600">
+                <span className="font-semibold text-sea-800">
+                  {t("versionLabel")}
+                </span>{" "}
+                {version}
+              </p>
+            ) : showBody ? (
+              <div
+                role="note"
+                className="rounded-md border border-dashed border-grey-300 bg-grey-50 px-5 py-4"
+              >
+                <span className="inline-block rounded-full border border-sea-200 bg-white px-3 py-1 text-caption font-semibold tracking-[0.04em] text-sea-800">
+                  {t("draftBadge")}
+                </span>
+                <p className="mt-3 text-small leading-relaxed text-grey-600">
+                  {t("draftNotice")}
+                </p>
               </div>
-            ))}
+            ) : (
+              <p className="text-body leading-relaxed text-grey-600">
+                {t("unpublishedNotice")}
+              </p>
+            )}
+            {showBody &&
+              sections.map((section) => (
+                <div key={section.heading}>
+                  <h2 className="mt-10 text-h4 font-semibold text-ink">
+                    {section.heading}
+                  </h2>
+                  {section.body.map((paragraph, i) => (
+                    <p
+                      key={i}
+                      className="mt-4 text-body leading-relaxed text-grey-600"
+                    >
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              ))}
           </div>
         </Container>
       </section>

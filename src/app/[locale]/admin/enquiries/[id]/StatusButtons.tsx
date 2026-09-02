@@ -1,5 +1,7 @@
 "use client";
 
+import { FormStatus } from "@/components/admin/Field";
+
 import { useActionState } from "react";
 import { AdminButton } from "@/components/admin/Field";
 import {
@@ -51,11 +53,7 @@ export function StatusButtons({
           </AdminButton>
         )}
       </div>
-      {state.status === "error" && (
-        <p className="mt-2 text-small text-red-700">
-          {state.message ?? (zh ? "保存失败" : "Failed to save")}
-        </p>
-      )}
+      <FormStatus state={state} fallback={zh ? "保存失败" : "Failed to save"} />
     </form>
   );
 }

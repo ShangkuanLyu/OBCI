@@ -2,9 +2,15 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { NewsletterForm } from "@/components/forms/NewsletterForm";
-import { NewsIndex } from "@/components/news/NewsIndex";
+import { NewsIndex, type NewsListItem } from "@/components/news/NewsIndex";
+import { ReviewNote } from "@/components/ui/ReviewNote";
 import { getNewsCategories, getPublishedNews } from "@/services/news";
 import { getChapters } from "@/services/organisation";
+import { categoryOptions, tagOptions } from "@/lib/news/filter";
+import {
+  designFixturesEnabled,
+  fixtureNewsTags,
+} from "@/lib/fixtures/design-review";
 import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
@@ -44,7 +50,10 @@ export default async function NewsIndexPage({
     getChapters().catch(() => []),
   ]);
 
-  const items = articles.map((article) => ({
+  // Preview build: the health articles carry their chapter tags from the
+  // fixture map until the approved data update tags the rows themselves.
+  const fixtures = designFixturesEnabled();
+  const items: NewsListItem[] = articles.map((article) => ({
     id: article.id,
     slug: article.slug,
     title: loc(article, "title", locale),
@@ -54,20 +63,20 @@ export default async function NewsIndexPage({
     categoryName: article.category ? loc(article.category, "name", locale) : "",
     image: mediaUrl(article.cover_image_path),
     featured: article.is_featured,
-    tags: article.tags ?? [],
+    tags: fixtures
+      ? Array.from(
+          new Set([...(article.tags ?? []), ...fixtureNewsTags(article.slug)]),
+        )
+      : (article.tags ?? []),
   }));
-  const categoryItems = categories.map((cat) => ({
-    slug: cat.slug,
-    name: loc(cat, "name", locale),
-  }));
-  // Industry-tag filter: tags matching a chapter slug display the chapter
-  // name; other tags display verbatim. Only tags in use are offered.
+  const categoryItems = categoryOptions(
+    categories.map((cat) => ({ slug: cat.slug, name: loc(cat, "name", locale) })),
+    items,
+  );
   const chapterNames = new Map(
     chapters.map((chapter) => [chapter.slug, loc(chapter, "name", locale)]),
   );
-  const tagItems = Array.from(new Set(items.flatMap((item) => item.tags))).map(
-    (value) => ({ value, label: chapterNames.get(value) ?? value }),
-  );
+  const tagItems = tagOptions(items, chapterNames);
 
   return (
     <>
@@ -78,6 +87,10 @@ export default async function NewsIndexPage({
 
       <section className="bg-white py-16 md:py-24">
         <Container>
+          {/* Fixture-only chapter tags are a demonstration association. */}
+          {fixtures && tagItems.length > 0 && (
+            <ReviewNote className="mb-8">{t("demoTagsNote")}</ReviewNote>
+          )}
           <NewsIndex
             items={items}
             categories={categoryItems}

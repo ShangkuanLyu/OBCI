@@ -1,18 +1,25 @@
 -- 008 · OBAI rebrand + DOCX-approved content seed (data-only, additive)
 -- STATUS: authored locally on 2026-09-02; NOT yet applied to the remote
--- project. Apply only after explicit approval.
+-- project. Apply only after explicit approval, and only AFTER
+-- 20260902120000_application_form_v2.sql (schema first, then this data).
+-- PRECONDITION: as for 007 — the six 20260827* remote migrations must be
+-- mirrored locally (`supabase db pull`) before this chain is replayed
+-- anywhere other than the current remote project.
 --
--- Every value below is either taken from the approved redesign DOCX, from
--- the conversation brief, or is provisional neutral copy explicitly listed
--- in the pre-push report. Nothing is deleted:
+-- Every value below is taken from the approved redesign DOCX or names a
+-- real, already-published content row. Content the chamber has not
+-- supplied (industry taglines/introductions, mission, core values,
+-- committee/secretariat descriptions, confirmed contact details, partner
+-- confirmation, approved legal texts) is deliberately left EMPTY so the
+-- site hides those modules until the CMS is filled in. Nothing is deleted:
 --  * identity settings are merged (previous values remain in the report);
 --  * the six DOCX industries are inserted as NEW rows; the ten legacy
 --    chapters are archived via is_active=false (recoverable);
 --  * ABS service item lists are trimmed to the DOCX-confirmed entries
 --    (removed handbook-only extras are listed in the pre-push report and
 --    can be restored once the chamber confirms them);
---  * three real, already-published health articles/events are tagged to
---    the health chapter.
+--  * no news/event is assigned to a chapter (that association awaits the
+--    chamber and is made in the CMS).
 
 -- 1 · Brand identity → OBAI (public-facing copy; legal name unchanged).
 update public.site_settings
@@ -21,14 +28,23 @@ set value = value || jsonb_build_object(
   'name_zh', '大洋洲工商协会',
   'name_en', 'Oceania Business Association',
   'tagline_zh', '搭建中澳及大洋洲多边商业互通枢纽',
-  'tagline_en', 'A multilateral business hub for China, Australia and Oceania',
-  'subtitle_zh', '赋能企业跨境成长',
-  'subtitle_en', 'Empowering cross-border growth'
+  'tagline_en', 'A multilateral business hub for China, Australia and Oceania'
 )
 where key = 'identity';
 
--- 2 · DOCX content blocks (fixed-shape site_settings keys; editable in the
---     extended admin settings module).
+-- 2 · Contact: NO field is confirmed for publication — the addresses,
+--     phone numbers, email, WeChat account and membership contact all
+--     await the chamber's ratification. The values stay in the CMS but are
+--     not shown until `confirmed_fields` is ticked in the admin settings
+--     module. This only initialises the key; no contact value is asserted.
+update public.site_settings
+set value = value || jsonb_build_object('confirmed_fields', jsonb_build_array())
+where key = 'contact' and not (value ? 'confirmed_fields');
+
+-- 3 · DOCX content blocks (fixed-shape site_settings keys; editable in the
+--     extended admin settings module). mission / core_values /
+--     strategy_committee / secretariat are NOT seeded: the DOCX marks
+--     them as content still to be supplied.
 insert into public.site_settings (key, value) values
 (
   'vision',
@@ -93,101 +109,104 @@ insert into public.site_settings (key, value) values
       'cta_href', '/membership/apply'
     )
   ))
+),
+(
+  -- DOCX §组织架构: unit names only, no personnel. The chapters unit
+  -- expands to the active industry_chapters rows at render time.
+  'org_structure',
+  jsonb_build_object('items', jsonb_build_array(
+    jsonb_build_object('key', 'leadership', 'kind', 'leadership', 'name_zh', '会长、执行会长与荣誉顾问', 'name_en', 'Presidents, Executive President and honorary advisers', 'note_zh', '', 'note_en', ''),
+    jsonb_build_object('key', 'strategy-committee', 'kind', 'committee', 'name_zh', '中国企业出海战略委员会', 'name_en', 'China Enterprise Going-Global Strategy Committee', 'note_zh', '', 'note_en', ''),
+    jsonb_build_object('key', 'chapters', 'kind', 'chapters', 'name_zh', '各行业分会', 'name_en', 'Industry chapters', 'note_zh', '', 'note_en', ''),
+    jsonb_build_object('key', 'secretariat', 'kind', 'secretariat', 'name_zh', '专业秘书处', 'name_en', 'Professional secretariat', 'note_zh', '', 'note_en', '')
+  ))
+),
+(
+  -- Gallery: only media the association has already published on its own
+  -- site (cover images of published news/event rows). Captions and links
+  -- resolve from those rows at render time.
+  'gallery',
+  jsonb_build_object('items', jsonb_build_array(
+    jsonb_build_object('image_path', 'events/agm-2026.jpg', 'event_slug', 'agm-2026'),
+    jsonb_build_object('image_path', 'events/world-traditional-medicine-forum-2025.jpg', 'event_slug', 'world-traditional-medicine-forum-2025'),
+    jsonb_build_object('image_path', 'news/taizhou-delegation-visits-melbourne-cooperation.jpg', 'news_slug', 'taizhou-delegation-visits-melbourne-cooperation'),
+    jsonb_build_object('image_path', 'news/obc-delegation-visits-liaoning-ccpit.jpg', 'news_slug', 'obc-delegation-visits-liaoning-ccpit'),
+    jsonb_build_object('image_path', 'news/7th-world-traditional-medicine-forum-melbourne.jpg', 'news_slug', '7th-world-traditional-medicine-forum-melbourne'),
+    jsonb_build_object('image_path', 'news/acbca-chinese-new-year-networking-event.jpg', 'news_slug', 'acbca-chinese-new-year-networking-event')
+  ))
+),
+(
+  -- Chamber confirmation gates. Nothing is confirmed yet: the partner wall
+  -- (brochure p5 list) stays hidden until 'partners' is added here.
+  'review',
+  jsonb_build_object('confirmed_modules', jsonb_build_array())
 )
 on conflict (key) do update set value = excluded.value;
 
--- 3 · Top tier renamed per the DOCX (Chinese only; the English name awaits
---     the chamber's confirmation).
+-- 4 · Fee-table wording per the DOCX where it differs from the brochure
+--     (Chinese only; English names await the chamber's confirmation):
+--     top tier 企业顶级会员, fourth tier 小微企业会员, individual threshold
+--     自然人创业者. Fees and turnover bands already match the DOCX.
 update public.membership_types
 set name_zh = '企业顶级会员'
 where code = 'corporate-group';
 
--- 4 · ABS service items trimmed to the DOCX-confirmed lists.
+update public.membership_types
+set name_zh = '小微企业会员'
+where code = 'small';
+
+update public.membership_types
+set turnover_zh = '自然人创业者'
+where code = 'individual';
+
+-- 5 · ABS service items trimmed to the DOCX-confirmed lists. The one-line
+--     summaries are the DOCX item lists joined (the previous summaries were
+--     build-authored paraphrases).
 update public.service_offerings set
+  summary_zh = 'TGA / RCM / 有机认证代办、FIRB 外资投资审批、税务架构规划、本地授权代表 / 进口商代持。',
+  summary_en = 'TGA, RCM and organic certification support; FIRB foreign-investment approvals; tax structure planning; local authorised representative and importer-of-record services.',
   items_zh = array['TGA / RCM / 有机认证代办','FIRB 外资投资审批','税务架构规划','本地授权代表 / 进口商代持'],
   items_en = array['TGA, RCM and organic certification support','FIRB foreign-investment approvals','Tax structure planning','Local authorised representative and importer-of-record services']
 where slug = 'market-entry';
 
 update public.service_offerings set
+  summary_zh = '会员金牌代理商筛选、政商闭门供需对接、订单前置匹配——先有采购意向再落地。',
+  summary_en = 'Vetted top-tier agents drawn from the membership, closed-door government-and-business supply-demand sessions, and pre-matched orders — demand secured before you land.',
   items_zh = array['会员金牌代理商筛选','政商闭门供需对接','订单前置匹配——先有采购意向再落地'],
   items_en = array['Vetted top-tier agents drawn from the membership','Closed-door government-and-business supply-demand sessions','Pre-matched orders — demand secured before you land']
 where slug = 'market-channels';
 
 update public.service_offerings set
+  summary_zh = '悉尼 / 墨尔本共享备件仓、全澳持证维保网络、统一派单托管——企业无需自建澳洲团队。',
+  summary_en = 'Shared spare-parts warehouses in Sydney and Melbourne, a nationwide licensed maintenance network, and centralised dispatch — no local team required.',
   items_zh = array['悉尼 / 墨尔本共享备件仓','全澳持证维保网络','统一派单托管——企业无需自建澳洲团队'],
   items_en = array['Shared spare-parts warehouses in Sydney and Melbourne','A nationwide licensed maintenance network','Centralised dispatch and managed service — no local team required']
 where slug = 'local-operations';
 
 update public.service_offerings set
+  summary_zh = '州政府补贴 / 土地政策对接、品牌危机公关、澳洲上市辅导、中澳产业基金对接。',
+  summary_en = 'State-government grant and land-policy introductions, brand and crisis communications, Australian listing advisory, and Australia–China industry fund introductions.',
   items_zh = array['州政府补贴 / 土地政策对接','品牌危机公关','澳洲上市辅导','中澳产业基金对接'],
   items_en = array['State-government grant and land-policy introductions','Brand and crisis communications','Australian listing advisory','Australia–China industry fund introductions']
 where slug = 'capital-government';
 
--- 5 · Six DOCX industries as new chapter rows. Taglines/descriptions are
---     provisional neutral copy pending the chamber's industry content;
---     the ABS industry-service items are the generic DOCX template trio.
+-- 6 · Six DOCX industries as new chapter rows — names only. Taglines,
+--     introductions, resources, experts, certifications and industry ABS
+--     services are left empty (DOCX: 行业赛道介绍 客户后续提供文字素材) so every
+--     content block hides until the chamber supplies it via the CMS. The
+--     English names are draft translations pending confirmation.
 insert into public.industry_chapters
-  (slug, name_zh, name_en, tagline_zh, tagline_en, description_zh, description_en,
-   services_zh, services_en, display_order, is_active)
+  (slug, name_zh, name_en, display_order, is_active)
 values
-(
-  'health-products', '大健康／健康产品', 'Health & Wellness Products',
-  '保健品、健康食品与健康产业的中澳双向贸易赛道。',
-  'Two-way trade in supplements, health foods and the wellness industry.',
-  E'大健康／健康产品行业分会是协会六大行业分会之一，面向保健品、健康食品与健康产业链上下游企业。分会依托协会的政商资源与 ABS 一站式出海服务体系，围绕产品合规、渠道对接与行业交流开展工作。\n\n健康产品进入澳洲市场通常涉及澳大利亚药品管理局（TGA）等监管体系的合规要求；进入中国市场则需应对跨境注册与渠道准入。分会关注行业合规与市场动态，并通过协会服务体系为会员对接相应支持。',
-  E'The Health & Wellness Products chapter is one of the association''s six industry chapters, serving businesses across supplements, health foods and the wider wellness supply chain. Drawing on the association''s government and business network and the ABS one-stop market-entry services, the chapter focuses on product compliance, channel matching and industry exchange.\n\nHealth products entering the Australian market typically face regulatory requirements under the Therapeutic Goods Administration (TGA); entering China involves cross-border registration and channel access. The chapter follows compliance and market developments and connects members to support through the association''s services.',
-  array['行业合规代办','定向采购匹配','行业专属展会'],
-  array['Industry compliance handling','Targeted procurement matching','Industry-specific trade events'],
-  1, true
-),
-(
-  'new-energy', '新能源产业', 'New Energy',
-  '新能源技术、装备与项目在澳洲市场的落地与合作。',
-  'New-energy technology, equipment and projects entering the Australian market.',
-  null, null,
-  array['行业合规代办','定向采购匹配','行业专属展会'],
-  array['Industry compliance handling','Targeted procurement matching','Industry-specific trade events'],
-  2, true
-),
-(
-  'building-materials', '建材基建', 'Building Materials & Infrastructure',
-  '建筑材料与基建工程领域的供需与项目对接。',
-  'Supply, demand and project matching in building materials and infrastructure.',
-  null, null,
-  array['行业合规代办','定向采购匹配','行业专属展会'],
-  array['Industry compliance handling','Targeted procurement matching','Industry-specific trade events'],
-  3, true
-),
-(
-  'cross-border-ecommerce', '跨境电商', 'Cross-Border E-commerce',
-  '跨境电商渠道、物流与品牌出海的行业交流。',
-  'Channels, logistics and brand-building for cross-border e-commerce.',
-  null, null,
-  array['行业合规代办','定向采购匹配','行业专属展会'],
-  array['Industry compliance handling','Targeted procurement matching','Industry-specific trade events'],
-  4, true
-),
-(
-  'education-tourism', '教育文旅', 'Education, Culture & Tourism',
-  '教育、文化与旅游产业的中澳合作与交流。',
-  'Australia–China cooperation across education, culture and tourism.',
-  null, null,
-  array['行业合规代办','定向采购匹配','行业专属展会'],
-  array['Industry compliance handling','Targeted procurement matching','Industry-specific trade events'],
-  5, true
-),
-(
-  'mining-investment', '矿产投资', 'Mining & Resources Investment',
-  '矿产资源领域的投资对接与行业交流。',
-  'Investment matching and exchange in mining and resources.',
-  null, null,
-  array['行业合规代办','定向采购匹配','行业专属展会'],
-  array['Industry compliance handling','Targeted procurement matching','Industry-specific trade events'],
-  6, true
-)
+  ('health-products', '大健康／健康产品', 'Health & Wellness Products', 1, true),
+  ('new-energy', '新能源产业', 'New Energy', 2, true),
+  ('building-materials', '建材基建', 'Building Materials & Infrastructure', 3, true),
+  ('cross-border-ecommerce', '跨境电商', 'Cross-Border E-commerce', 4, true),
+  ('education-tourism', '教育文旅', 'Education, Culture & Tourism', 5, true),
+  ('mining-investment', '矿产投资', 'Mining & Resources Investment', 6, true)
 on conflict (slug) do nothing;
 
--- 6 · Archive (NOT delete) the ten legacy chapters — recoverable by
+-- 7 · Archive (NOT delete) the ten legacy chapters — recoverable by
 --     setting is_active back to true.
 update public.industry_chapters
 set is_active = false
@@ -197,7 +216,7 @@ where slug in (
   'canberra-branch'
 );
 
--- 7 · Leadership portraits: the existing portrait_path values reference
+-- 8 · Leadership portraits: the existing portrait_path values reference
 --     storage objects that were never uploaded (broken images on the live
 --     site today). The six official portraits from the handbook are
 --     uploaded to the media bucket as leadership/<slug>.jpg IMMEDIATELY
@@ -210,16 +229,8 @@ update public.leadership set portrait_path = 'leadership/john-so.jpg' where name
 update public.leadership set portrait_path = 'leadership/george-tambassis.jpg' where name_en = 'George Tambassis';
 update public.leadership set portrait_path = 'leadership/sunny-sun.jpg' where name_en = 'Sunny Sun';
 
--- 8 · Tag real, already-published health content to the health chapter.
-update public.news
-set tags = array_append(tags, 'health-products')
-where slug in (
-  'melbourne-australia-china-health-expo-tcm-forum-2025',
-  '7th-world-traditional-medicine-forum-melbourne',
-  'world-traditional-medicine-forum-preparatory-meeting'
-) and not (tags @> array['health-products']);
-
-update public.events
-set tags = array_append(tags, 'health-products')
-where slug = 'world-traditional-medicine-forum-2025'
-  and not (tags @> array['health-products']);
+-- 9 · (intentionally empty) No news/event is assigned to an industry
+--     chapter by this migration: which articles and events belong to which
+--     chapter is the chamber's decision, to be made in the CMS (news.tags /
+--     events.tags editors) after approval. The fixture build's health-chapter
+--     association is a labelled demonstration only.

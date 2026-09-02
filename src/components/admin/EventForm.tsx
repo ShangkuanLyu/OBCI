@@ -1,5 +1,7 @@
 "use client";
 
+import { FormStatus } from "@/components/admin/Field";
+
 import { useActionState } from "react";
 import {
   Field,
@@ -18,6 +20,13 @@ import type { Tables } from "@/types/database.types";
 
 const initialState: EventActionState = { status: "idle" };
 
+/** Active industry chapters offered as event tags. */
+export type EventChapterOption = {
+  slug: string;
+  name_zh: string;
+  name_en: string;
+};
+
 /** Convert a DB timestamp to the value a datetime-local input expects. */
 function toDatetimeLocal(value: string | null): string {
   if (!value) return "";
@@ -27,11 +36,21 @@ function toDatetimeLocal(value: string | null): string {
 export function EventForm({
   locale,
   event,
+  chapters = [],
 }: {
   locale: string;
-  event?: Tables<"events">;
+  /** `tags` arrives once the pending events.tags migration lands. */
+  event?: Tables<"events"> & { tags?: string[] };
+  chapters?: EventChapterOption[];
 }) {
   const zh = locale === "zh";
+  const selectedTags = new Set(event?.tags ?? []);
+  // Tags that no longer match an active chapter stay visible so an editor
+  // can deliberately remove them instead of losing them on save.
+  const orphanTags = [...selectedTags].filter(
+    (slug) => !chapters.some((chapter) => chapter.slug === slug),
+  );
+  const tagsEditable = chapters.length > 0 || orphanTags.length > 0;
   const [state, formAction, pending] = useActionState(
     event ? updateEvent : createEvent,
     initialState,
@@ -199,6 +218,54 @@ export function EventForm({
             </Field>
           </div>
 
+          {tagsEditable && (
+            <fieldset>
+              <legend className="mb-1.5 block text-small font-medium text-ink">
+                {zh ? "关联行业分会" : "Industry chapters"}
+              </legend>
+              {/* Signals to the action that tags were editable in this form,
+                  so a form rendered without chapters never wipes them. */}
+              <input type="hidden" name="tags_editable" value="1" />
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {chapters.map((chapter) => (
+                  <label
+                    key={chapter.slug}
+                    className="flex items-center gap-2 text-small text-ink"
+                  >
+                    <input
+                      type="checkbox"
+                      name="tags"
+                      value={chapter.slug}
+                      defaultChecked={selectedTags.has(chapter.slug)}
+                      className="h-4 w-4 accent-sea-900"
+                    />
+                    {zh ? chapter.name_zh : chapter.name_en}
+                  </label>
+                ))}
+                {orphanTags.map((slug) => (
+                  <label
+                    key={slug}
+                    className="flex items-center gap-2 text-small text-grey-600"
+                  >
+                    <input
+                      type="checkbox"
+                      name="tags"
+                      value={slug}
+                      defaultChecked
+                      className="h-4 w-4 accent-sea-900"
+                    />
+                    {slug}
+                  </label>
+                ))}
+              </div>
+              <p className="mt-1.5 text-caption text-grey-500">
+                {zh
+                  ? "勾选的分会页面会在「往期活动」中列出本活动"
+                  : "Ticked chapters list this event under their past events"}
+              </p>
+            </fieldset>
+          )}
+
           <div className="flex flex-wrap gap-6 pt-1">
             <label className="flex items-center gap-2 text-small text-ink">
               <input
@@ -269,9 +336,7 @@ export function EventForm({
                   ? "创建活动"
                   : "Create event"}
           </AdminButton>
-          {state.status === "error" && (
-            <p className="mt-3 text-small text-red-700">{state.message}</p>
-          )}
+          <FormStatus state={state} className="mt-3" />
         </div>
       </form>
 
@@ -296,9 +361,7 @@ export function EventForm({
           <AdminButton type="submit" variant="danger" disabled={deletePending}>
             {zh ? "删除活动" : "Delete event"}
           </AdminButton>
-          {deleteState.status === "error" && (
-            <p className="mt-3 text-small text-red-700">{deleteState.message}</p>
-          )}
+          <FormStatus state={deleteState} className="mt-3" />
         </form>
       )}
     </>

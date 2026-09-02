@@ -100,14 +100,26 @@ Enforcement is three-layered, per the brief:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://gmglssmdrsackqgkqdbu.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=…        # publishable key
-SUPABASE_SERVICE_ROLE_KEY=…            # server-only; NOT committed
-SUPABASE_SECRET_KEY=…                  # (modern name, if used instead)
+SUPABASE_SECRET_KEY=…                  # server-only secret (service role); NOT committed — read by src/lib/supabase/admin.ts
 STRIPE_SECRET_KEY=…                    # optional until Phase 10 goes live
 STRIPE_WEBHOOK_SECRET=…
-NEXT_PUBLIC_SITE_URL=…
+NEXT_PUBLIC_SITE_URL=…                 # absolute origin incl. base path; canonical/hreflang/OG/sitemap URLs
 ```
 
 `.env.local` is git-ignored; `.env.example` documents the contract.
+
+### Build flags per deployment
+
+| Flag | Node / Vercel | GitHub Pages CI (production) | Chamber-review preview |
+| --- | --- | --- | --- |
+| `STATIC_EXPORT=1` — `output: "export"`, trailing slashes, `basePath` applied; server-only parts stripped by the workflow | unset | `1` | `1` |
+| `NEXT_PUBLIC_BASE_PATH` — sub-path of the static export (e.g. `/OBCI`); honoured only when `STATIC_EXPORT=1` | unset | `/OBCI` | set to the preview repo path |
+| `NEXT_PUBLIC_SITE_URL` — absolute origin incl. base path | deployment origin | `https://<owner>.github.io/OBCI` | preview origin |
+| `NEXT_PUBLIC_PREVIEW_DEPLOYMENT=1` — noindex + `robots` disallow all + empty sitemap, review banner and module review notes, unconfirmed content hidden (`src/lib/preview.ts`, `src/lib/review.ts`) | unset | unset | `1` |
+| `NEXT_PUBLIC_DESIGN_FIXTURES=1` — flag-gated design-review fixtures for rows whose migration is not applied (`src/lib/fixtures/`) | unset | unset | `1` |
+| `NEXT_PUBLIC_INTERNAL_REVIEW=1` — local internal review only: unconfirmed contact details render with a "pending chamber confirmation" marker (`contactFieldState` in `src/lib/review.ts`) | unset | unset | unset (only `scripts/build-static-preview.sh PREVIEW=1` sets it) |
+
+Either review flag disables every public write path at the HTML level (`submissionsDisabled()`), so a build showing provisional content can never accept real submissions. Production leaves both unset.
 
 ## 8. Types
 

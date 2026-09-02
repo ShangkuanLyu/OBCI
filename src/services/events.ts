@@ -50,6 +50,10 @@ export async function getEventBySlug(slug: string): Promise<EventRow | null> {
   return data;
 }
 
+/** Logged at most once per process so a missing `events.tags` column is
+ *  visible in build output without flooding it (one line per chapter). */
+let warnedChapterQuery = false;
+
 /**
  * Events associated with an industry chapter. In production the link is a
  * chapter-slug entry in `events.tags` (added by the pending migration);
@@ -82,7 +86,15 @@ export async function getEventsByChapter(
     .order("starts_at", { ascending: false })
     .limit(limit);
   // Fails soft while the tags column migration is still pending.
-  if (error) return [];
+  if (error) {
+    if (!warnedChapterQuery) {
+      warnedChapterQuery = true;
+      console.warn(
+        `getEventsByChapter: chapter events hidden — ${error.message}`,
+      );
+    }
+    return [];
+  }
   return data;
 }
 

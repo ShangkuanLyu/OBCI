@@ -59,13 +59,13 @@ export default async function LeadershipPage({
           <div className="space-y-16 md:space-y-20">
             {groups.map((group) => (
               <div key={group.key}>
-                <p className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em] text-sea-800">
+                <h2 className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em] text-sea-800">
                   <span
                     className="h-0.5 w-6 rounded-full bg-sea-800"
                     aria-hidden
                   />
                   {t(`groups.${group.key}`)}
-                </p>
+                </h2>
                 <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-3">
                   {group.people.map((person, i) => {
                     const portrait = imageUrl(person.portrait_path);
@@ -80,16 +80,16 @@ export default async function LeadershipPage({
                         {portrait && (
                           <Image
                             src={portrait}
-                            alt={name}
+                            alt=""
                             width={480}
                             height={600}
                             className="aspect-[4/5] w-full bg-sea-50 object-cover"
                           />
                         )}
                         <div className="p-6">
-                          <h2 className="text-h4 font-semibold text-ink">
+                          <h3 className="text-h4 font-semibold text-ink">
                             {name}
-                          </h2>
+                          </h3>
                           <p className="mt-2 text-small text-grey-500">
                             {loc(person, "title", locale)}
                           </p>

@@ -18,11 +18,14 @@ export default async function AdminEventEditPage({
   if (!Number.isInteger(eventId) || eventId <= 0) notFound();
 
   const supabase = await createClient();
-  const { data: event } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", eventId)
-    .maybeSingle();
+  const [{ data: event }, { data: chapters }] = await Promise.all([
+    supabase.from("events").select("*").eq("id", eventId).maybeSingle(),
+    supabase
+      .from("industry_chapters")
+      .select("slug, name_zh, name_en")
+      .eq("is_active", true)
+      .order("display_order"),
+  ]);
   if (!event) notFound();
 
   return (
@@ -35,7 +38,7 @@ export default async function AdminEventEditPage({
           event.slug}
       </p>
       <div className="mt-8">
-        <EventForm locale={locale} event={event} />
+        <EventForm locale={locale} event={event} chapters={chapters ?? []} />
       </div>
     </div>
   );

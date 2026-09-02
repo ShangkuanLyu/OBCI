@@ -18,13 +18,19 @@ export default async function AdminNewsEditPage({
   if (!Number.isInteger(newsId) || newsId <= 0) notFound();
 
   const supabase = await createClient();
-  const [{ data: row }, { data: categories }] = await Promise.all([
-    supabase.from("news").select("*").eq("id", newsId).maybeSingle(),
-    supabase
-      .from("news_categories")
-      .select("id, name_zh, name_en")
-      .order("display_order", { ascending: true }),
-  ]);
+  const [{ data: row }, { data: categories }, { data: chapters }] =
+    await Promise.all([
+      supabase.from("news").select("*").eq("id", newsId).maybeSingle(),
+      supabase
+        .from("news_categories")
+        .select("id, name_zh, name_en")
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("industry_chapters")
+        .select("slug, name_zh, name_en")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true }),
+    ]);
 
   if (!row) notFound();
 
@@ -39,6 +45,10 @@ export default async function AdminNewsEditPage({
           categories={(categories ?? []).map((category) => ({
             id: category.id,
             name: zh ? category.name_zh : category.name_en,
+          }))}
+          chapters={(chapters ?? []).map((chapter) => ({
+            slug: chapter.slug,
+            name: zh ? chapter.name_zh : chapter.name_en,
           }))}
           initial={row}
           locale={locale}

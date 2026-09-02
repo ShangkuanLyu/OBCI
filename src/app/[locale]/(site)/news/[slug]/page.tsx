@@ -35,6 +35,9 @@ export async function generateMetadata({
     title: loc(article, "title", locale as Locale),
     description: loc(article, "summary", locale as Locale),
     ogImage: cover ?? undefined,
+    ogType: "article",
+    publishedTime: article.published_at ?? undefined,
+    modifiedTime: article.updated_at,
   });
 }
 
@@ -111,7 +114,7 @@ export default async function NewsArticlePage({
             <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-sea-50">
               <Image
                 src={mediaUrl(article.cover_image_path)!}
-                alt=""
+                alt={t("coverAlt", { title: loc(article, "title", locale) })}
                 fill
                 sizes="(min-width: 1024px) 896px, 100vw"
                 className="object-cover"
@@ -125,11 +128,13 @@ export default async function NewsArticlePage({
                 {locale === "zh" ? tCommon("englishOnly") : tCommon("chineseOnly")}
               </p>
             )}
-            <p className="text-body-lg leading-relaxed text-grey-600">
-              {loc(article, "summary", locale)}
-            </p>
-            <div className="mt-10 border-t border-grey-300 pt-2">
-              {renderMarkdown(body)}
+            <div lang={bodyIsFallback ? (locale === "zh" ? "en" : "zh") : undefined}>
+              <p className="text-body-lg leading-relaxed text-grey-600">
+                {loc(article, "summary", locale)}
+              </p>
+              <div className="mt-10 border-t border-grey-300 pt-2">
+                {renderMarkdown(body)}
+              </div>
             </div>
             {article.source_url && (
               <p className="mt-12 border-t border-grey-300 pt-6 text-caption text-grey-500">

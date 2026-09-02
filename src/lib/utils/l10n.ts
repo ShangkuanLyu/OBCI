@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/routing";
+import { basePath } from "./asset";
 
 type BilingualRow = Record<string, unknown>;
 
@@ -54,7 +55,7 @@ export function mediaUrl(path: string | null): string | null {
 export function imageUrl(path: string | null): string | null {
   if (!path) return null;
   if (path.startsWith("/")) {
-    return `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${path}`;
+    return `${basePath()}${path}`;
   }
   return mediaUrl(path);
 }

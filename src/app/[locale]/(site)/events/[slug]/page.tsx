@@ -58,16 +58,18 @@ export default async function EventDetailPage({
   const summary = loc(event, "summary", locale);
   const body = loc(event, "body", locale);
   const cover = mediaUrl(event.cover_image_path);
+  const title = loc(event, "title", locale);
   const isFuture = eventIsUpcoming(event);
 
   const eventJsonLd = {
     "@context": "https://schema.org",
     "@type": "Event",
-    name: loc(event, "title", locale),
+    name: title,
     description: summary || undefined,
     startDate: event.starts_at,
     endDate: event.ends_at ?? undefined,
-    eventStatus: "https://schema.org/EventScheduled",
+    // A concluded event is not "scheduled"; schema.org has no "past" status.
+    eventStatus: isFuture ? "https://schema.org/EventScheduled" : undefined,
     location: location
       ? { "@type": "Place", name: location }
       : undefined,
@@ -92,7 +94,7 @@ export default async function EventDetailPage({
             {location && <span className="text-grey-500">· {location}</span>}
           </p>
           <h1 className="mt-5 max-w-[24em] text-[1.75rem] font-semibold leading-[1.2] tracking-[-0.015em] text-ink md:text-[2.5rem] md:leading-[1.15]">
-            {loc(event, "title", locale)}
+            {title}
           </h1>
           {summary && (
             <p className="mt-6 max-w-[36rem] text-body-lg text-grey-600">
@@ -108,7 +110,7 @@ export default async function EventDetailPage({
             <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-sea-50">
               <Image
                 src={cover}
-                alt=""
+                alt={t("coverAlt", { title })}
                 fill
                 sizes="(min-width: 1024px) 896px, 100vw"
                 className="object-cover"

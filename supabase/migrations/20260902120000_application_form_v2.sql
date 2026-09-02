@@ -1,25 +1,61 @@
--- 007 · Application form v2 + industry tags on events
+-- 007 · Application form v2, chapter template columns, industry tags on events
 -- STATUS: authored locally on 2026-09-02; NOT yet applied to the remote
 -- project. Apply only after explicit approval, then regenerate types.
+-- PRECONDITION: the remote project already carries the six 20260827*
+-- migrations (company_address/fax/mobile/company_intro/directory_consent/
+-- agreed_terms/agreed_marketing etc.) that are not yet mirrored in this
+-- folder — run `supabase db pull` first so the local chain reproduces them.
 --
 -- Additive only:
---  * membership_applications gains the remaining DOCX/brief fields
---    (first/last name split, constitution consent placeholder, consent
---    timestamp, policy version). Existing columns and rows untouched.
+--  * membership_applications gains the remaining DOCX/brief fields:
+--    first/last name split, per-language company introductions, the three
+--    separately recorded consents (constitution, terms, privacy), the
+--    consent timestamp and the policy-version stamp. Existing columns and
+--    rows are untouched (company_intro keeps receiving a merged copy).
+--  * industry_chapters gains the two chapter-template blocks that had no
+--    data model: expert advisers and certification information
+--    (resources_* = local agents / channels, services_* = ABS industry
+--    services).
 --  * events gains a tags text[] column (chapter association mechanism,
 --    mirroring news.tags) + GIN indexes for tag lookups.
---  * submit_membership_application_v2 writes the full field set. The v1
---    RPC is kept unchanged for backwards compatibility.
+--  * submit_membership_application_v2 writes the full field set and
+--    enforces the legal gate server-side. The v1 RPC is kept unchanged for
+--    backwards compatibility; revoke its anon grant once the v2 form is
+--    live (see docs/preview-to-production-matrix.md §5).
 
 alter table public.membership_applications
   add column if not exists first_name text,
   add column if not exists last_name text,
-  add column if not exists constitution_agreed boolean not null default false,
+  add column if not exists company_intro_zh text,
+  add column if not exists company_intro_en text,
+  add column if not exists agreed_constitution boolean not null default false,
+  add column if not exists agreed_privacy boolean not null default false,
   add column if not exists consent_at timestamptz,
   add column if not exists policy_version text;
 
-comment on column public.membership_applications.constitution_agreed is
-  'Reserved: the constitution checkbox ships only once the chamber supplies the constitution text.';
+comment on column public.membership_applications.agreed_constitution is
+  'Applicant agreed to the association constitution (required; recorded separately from terms/privacy).';
+comment on column public.membership_applications.agreed_privacy is
+  'Applicant accepted the privacy policy (required; recorded separately from agreed_terms).';
+comment on column public.membership_applications.consent_at is
+  'Server timestamp at which the consents were recorded.';
+comment on column public.membership_applications.policy_version is
+  'Versions of the legal texts consented to, e.g. constitution=2026-10;terms=2026-10;privacy=2026-10 (verified against site_settings.legal).';
+comment on column public.membership_applications.company_intro is
+  'Legacy merged introduction (zh, else en) kept for existing admin views; see company_intro_zh / company_intro_en.';
+
+alter table public.industry_chapters
+  add column if not exists experts_zh text[] not null default '{}',
+  add column if not exists experts_en text[] not null default '{}',
+  add column if not exists certifications_zh text[] not null default '{}',
+  add column if not exists certifications_en text[] not null default '{}';
+
+comment on column public.industry_chapters.resources_zh is
+  'Australian local agents / channel resources (one item per element).';
+comment on column public.industry_chapters.experts_zh is
+  'Expert advisers of the chapter (one item per element).';
+comment on column public.industry_chapters.certifications_zh is
+  'Relevant Australian certifications, e.g. TGA, AS/NZS (one item per element).';
 
 alter table public.events
   add column if not exists tags text[] not null default '{}';
@@ -27,11 +63,21 @@ alter table public.events
 create index if not exists events_tags_gin_idx on public.events using gin (tags);
 create index if not exists news_tags_gin_idx on public.news using gin (tags);
 
--- Full-field application submission. Validation mirrors the client 1:1:
+-- Full-field application submission. Validation mirrors the client 1:1
+-- (src/lib/apply/intro-limits.ts, src/lib/review.ts):
+--  * the legal texts must be approved: site_settings.legal carries
+--    constitution_version, terms_version and privacy_version, and the
+--    caller's p_policy_version must equal the server-computed stamp
+--    "constitution=…;terms=…;privacy=…" (so it cannot be forged or omitted);
 --  * membership type must exist and be active;
---  * terms/privacy acceptance is mandatory;
---  * company intro: text containing CJK ideographs (一-鿿) is limited to
---    500 characters, otherwise to 500 words; 4000 chars is a hard cap.
+--  * constitution, terms AND privacy consent are each mandatory and each
+--    stored as the value received (never a literal);
+--  * at least one company introduction is required;
+--  * Chinese introduction: at most 500 characters;
+--  * English introduction: at most 500 whitespace-separated words and at
+--    most 4000 characters;
+--  * both introductions are trimmed of ASCII and ideographic whitespace
+--    with the same character class the client uses.
 create or replace function public.submit_membership_application_v2(
   p_membership_type_code text,
   p_first_name text,
@@ -43,9 +89,12 @@ create or replace function public.submit_membership_application_v2(
   p_company_phone text default null,
   p_fax text default null,
   p_position text default null,
-  p_company_intro text default null,
+  p_company_intro_zh text default null,
+  p_company_intro_en text default null,
   p_directory_consent boolean default false,
+  p_agreed_constitution boolean default false,
   p_agreed_terms boolean default false,
+  p_agreed_privacy boolean default false,
   p_agreed_marketing boolean default false,
   p_policy_version text default null,
   p_locale text default 'zh'
@@ -58,10 +107,30 @@ declare
   v_type_id bigint;
   v_id bigint;
   v_token uuid;
-  v_intro text := nullif(btrim(coalesce(p_company_intro, '')), '');
+  v_legal jsonb;
+  v_expected text;
+  -- Same trim/split class as the client: ASCII whitespace + U+3000.
+  v_edge text := '^[\s　]+|[\s　]+$';
+  v_intro_zh text := nullif(regexp_replace(coalesce(p_company_intro_zh, ''), '^[\s　]+|[\s　]+$', '', 'g'), '');
+  v_intro_en text := nullif(regexp_replace(coalesce(p_company_intro_en, ''), '^[\s　]+|[\s　]+$', '', 'g'), '');
   v_first text := btrim(coalesce(p_first_name, ''));
   v_last text := btrim(coalesce(p_last_name, ''));
 begin
+  -- Legal gate: nothing lawful to consent to until all three texts exist.
+  select value into v_legal from public.site_settings where key = 'legal';
+  if v_legal is null
+     or coalesce(btrim(v_legal->>'constitution_version'), '') = ''
+     or coalesce(btrim(v_legal->>'terms_version'), '') = ''
+     or coalesce(btrim(v_legal->>'privacy_version'), '') = '' then
+    raise exception 'legal texts not approved';
+  end if;
+  v_expected := 'constitution=' || btrim(v_legal->>'constitution_version')
+             || ';terms=' || btrim(v_legal->>'terms_version')
+             || ';privacy=' || btrim(v_legal->>'privacy_version');
+  if nullif(btrim(coalesce(p_policy_version, '')), '') is distinct from v_expected then
+    raise exception 'policy version mismatch';
+  end if;
+
   select id into v_type_id
   from public.membership_types
   where code = p_membership_type_code and is_active;
@@ -73,28 +142,38 @@ begin
     raise exception 'name required';
   end if;
 
+  if coalesce(p_agreed_constitution, false) is not true then
+    raise exception 'constitution not accepted';
+  end if;
   if coalesce(p_agreed_terms, false) is not true then
     raise exception 'terms not accepted';
   end if;
+  if coalesce(p_agreed_privacy, false) is not true then
+    raise exception 'privacy not accepted';
+  end if;
 
-  if v_intro is not null then
-    if char_length(v_intro) > 4000 then
-      raise exception 'company intro too long';
+  if v_intro_zh is null and v_intro_en is null then
+    raise exception 'company intro required';
+  end if;
+  if v_intro_zh is not null and char_length(v_intro_zh) > 500 then
+    raise exception 'company intro zh too long';
+  end if;
+  if v_intro_en is not null then
+    if char_length(v_intro_en) > 4000 then
+      raise exception 'company intro en too long';
     end if;
-    if v_intro ~ '[一-鿿]' then
-      if char_length(v_intro) > 500 then
-        raise exception 'company intro too long';
-      end if;
-    elsif coalesce(array_length(regexp_split_to_array(v_intro, '\s+'), 1), 0) > 500 then
-      raise exception 'company intro too long';
+    if coalesce(array_length(regexp_split_to_array(v_intro_en, '[\s　]+'), 1), 0) > 500 then
+      raise exception 'company intro en too long';
     end if;
   end if;
+  perform v_edge; -- keeps the documented class next to its two uses
 
   insert into public.membership_applications (
     membership_type_id, applicant_user_id, applicant_name,
     first_name, last_name, email, mobile, phone,
     organisation_name, company_address, fax, "position",
-    company_intro, directory_consent, agreed_terms, agreed_marketing,
+    company_intro, company_intro_zh, company_intro_en,
+    directory_consent, agreed_constitution, agreed_terms, agreed_privacy, agreed_marketing,
     consent_at, policy_version, locale
   ) values (
     v_type_id,
@@ -109,12 +188,16 @@ begin
     nullif(btrim(coalesce(p_company_address, '')), ''),
     nullif(btrim(coalesce(p_fax, '')), ''),
     nullif(btrim(coalesce(p_position, '')), ''),
-    v_intro,
+    coalesce(v_intro_zh, v_intro_en),
+    v_intro_zh,
+    v_intro_en,
     coalesce(p_directory_consent, false),
-    true,
+    coalesce(p_agreed_constitution, false),
+    coalesce(p_agreed_terms, false),
+    coalesce(p_agreed_privacy, false),
     coalesce(p_agreed_marketing, false),
     now(),
-    nullif(btrim(coalesce(p_policy_version, '')), ''),
+    v_expected,
     case when p_locale in ('zh', 'en') then p_locale else 'zh' end
   )
   returning id, access_token into v_id, v_token;
@@ -124,10 +207,10 @@ end;
 $$;
 
 revoke execute on function public.submit_membership_application_v2(
-  text, text, text, text, text, text, text, text, text, text, text,
-  boolean, boolean, boolean, text, text
+  text, text, text, text, text, text, text, text, text, text, text, text,
+  boolean, boolean, boolean, boolean, boolean, text, text
 ) from public;
 grant execute on function public.submit_membership_application_v2(
-  text, text, text, text, text, text, text, text, text, text, text,
-  boolean, boolean, boolean, text, text
+  text, text, text, text, text, text, text, text, text, text, text, text,
+  boolean, boolean, boolean, boolean, boolean, text, text
 ) to anon, authenticated, service_role;

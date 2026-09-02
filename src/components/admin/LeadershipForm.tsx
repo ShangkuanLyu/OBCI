@@ -1,5 +1,7 @@
 "use client";
 
+import { FormStatus } from "@/components/admin/Field";
+
 import { useActionState } from "react";
 import {
   Field,
@@ -174,9 +176,7 @@ export function LeadershipForm({
                 ? "保存"
                 : "Save"}
           </AdminButton>
-          {state.status === "error" && (
-            <p className="mt-2 text-small text-red-700">{state.message}</p>
-          )}
+          <FormStatus state={state} />
         </div>
       </form>
 
@@ -201,9 +201,7 @@ export function LeadershipForm({
           <AdminButton type="submit" variant="danger" disabled={deletePending}>
             {zh ? "删除" : "Delete"}
           </AdminButton>
-          {deleteState.status === "error" && (
-            <p className="mt-2 text-small text-red-700">{deleteState.message}</p>
-          )}
+          <FormStatus state={deleteState} />
         </form>
       )}
     </>

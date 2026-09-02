@@ -1,5 +1,7 @@
 "use client";
 
+import { FormStatus } from "@/components/admin/Field";
+
 import { useActionState } from "react";
 import {
   createNews,
@@ -29,14 +31,24 @@ function toDatetimeLocal(iso: string | null): string {
 
 export function NewsForm({
   categories,
+  chapters,
   initial,
   locale,
 }: {
   categories: { id: number; name: string }[];
+  /** Active industry chapters; each becomes an industry-tag checkbox. */
+  chapters: { slug: string; name: string }[];
   initial: Tables<"news"> | null;
   locale: string;
 }) {
   const zh = locale === "zh";
+  const selectedTags = new Set(initial?.tags ?? []);
+  // Tags that no longer match an active chapter stay visible so an editor
+  // can deliberately remove them instead of losing them on save.
+  const orphanTags = [...selectedTags].filter(
+    (slug) => !chapters.some((chapter) => chapter.slug === slug),
+  );
+  const tagsEditable = chapters.length > 0 || orphanTags.length > 0;
   const [state, formAction, pending] = useActionState(
     initial ? updateNews : createNews,
     initialState,
@@ -187,6 +199,54 @@ export function NewsForm({
           />
         </Field>
 
+        {tagsEditable && (
+          <fieldset className="md:col-span-2">
+            <legend className="mb-1.5 text-small font-medium text-ink">
+              {zh ? "行业标签" : "Industry tags"}
+            </legend>
+            {/* Signals to the action that tags were editable in this form,
+                so a form rendered without chapters never wipes them. */}
+            <input type="hidden" name="tags_editable" value="1" />
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              {chapters.map((chapter) => (
+                <label
+                  key={chapter.slug}
+                  className="flex items-center gap-2 text-small text-ink"
+                >
+                  <input
+                    type="checkbox"
+                    name="tags"
+                    value={chapter.slug}
+                    defaultChecked={selectedTags.has(chapter.slug)}
+                    className="h-4 w-4 rounded border-grey-300 accent-sea-900"
+                  />
+                  {chapter.name}
+                </label>
+              ))}
+              {orphanTags.map((slug) => (
+                <label
+                  key={slug}
+                  className="flex items-center gap-2 text-small text-grey-600"
+                >
+                  <input
+                    type="checkbox"
+                    name="tags"
+                    value={slug}
+                    defaultChecked
+                    className="h-4 w-4 rounded border-grey-300 accent-sea-900"
+                  />
+                  {slug}
+                </label>
+              ))}
+            </div>
+            <p className="mt-1.5 text-caption text-grey-500">
+              {zh
+                ? "关联的行业分会：文章将出现在对应分会页面，并可在资讯中心按行业筛选"
+                : "Linked industry chapters: the article appears on those chapter pages and under the industry filter in the news centre"}
+            </p>
+          </fieldset>
+        )}
+
         <div className="md:col-span-2">
           <label className="flex items-center gap-2 text-small font-medium text-ink">
             <input
@@ -231,9 +291,7 @@ export function NewsForm({
                   ? "创建新闻"
                   : "Create article"}
           </AdminButton>
-          {state.status === "error" && (
-            <p className="mt-3 text-small text-red-700">{state.message}</p>
-          )}
+          <FormStatus state={state} className="mt-3" />
         </div>
       </form>
 
