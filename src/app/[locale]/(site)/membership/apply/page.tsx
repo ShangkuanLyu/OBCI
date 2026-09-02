@@ -19,6 +19,7 @@ import {
   submissionsDisabled,
 } from "@/lib/preview";
 import { loc } from "@/lib/utils/l10n";
+import { formatFeeAmount } from "@/lib/utils/fee";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
@@ -40,12 +41,6 @@ export async function generateMetadata({
   });
 }
 
-function formatPrice(amount: number, locale: Locale): string {
-  return new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-AU", {
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
 const PENDING_CONTACT_FIELDS: ContactField[] = [
   "address",
   "email",
@@ -63,6 +58,7 @@ export default async function ApplyPage({
   const t = await getTranslations("apply");
   const tContact = await getTranslations("contact");
   const tCommon = await getTranslations("common");
+  const tMembership = await getTranslations("membership");
   const zh = locale === "zh";
 
   const [types, settings] = await Promise.all([
@@ -194,7 +190,7 @@ export default async function ApplyPage({
                       </td>
                       <td className="px-6 py-4 text-right font-semibold tabular-nums text-sea-800">
                         {type.price_annual != null
-                          ? formatPrice(Number(type.price_annual), locale)
+                          ? `${formatFeeAmount(Number(type.price_annual), type.currency)}${tMembership("perYear")}`
                           : "—"}
                       </td>
                     </tr>

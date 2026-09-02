@@ -111,6 +111,7 @@
     "standfirst": "商会动态、经贸政策与行业市场资讯。",
     "all": "全部",
     "empty": "该分类下暂无内容。",
+    "legacyCategory": "历史分类待整理",
     "noResults": "未找到匹配的资讯。",
     "noResultsFiltered": "当前筛选条件下未找到资讯。",
     "searchLabel": "搜索资讯",
@@ -216,6 +217,7 @@
   "chapters": {
     "title": "行业分会",
     "standfirst": "{count}大行业分会，以赛道为纽带精准对接资源。",
+    "detailDescription": "大洋洲工商协会（OBAI）{name}行业分会。",
     "secretaryGeneral": "秘书长",
     "empty": "分会信息即将发布。",
     "backToChapters": "返回行业分会",
@@ -247,7 +249,7 @@
     "tiersCta": "查看会费标准与在线申请",
     "popular": "最受欢迎",
     "feeContact": "费用请咨询秘书处",
-    "perYear": "/ 年",
+    "perYear": "／年",
     "applyCta": "在线申请入会",
     "applyNote": "审核通过前不会产生任何费用。"
   },

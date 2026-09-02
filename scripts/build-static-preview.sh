@@ -69,6 +69,15 @@ cat > out/index.html <<HTML
 </html>
 HTML
 
+# Fail the build on unresolved template variables ({count} …) in titles,
+# meta/OG/JSON-LD or visible markup, heading/metadata defects and — in
+# preview mode — any enabled form. Same checker as the Pages workflow.
+if [ "${PREVIEW:-0}" = "1" ]; then
+  node scripts/check-static-output.mjs out --preview
+else
+  node scripts/check-static-output.mjs out
+fi
+
 rm -rf "$OUT"
 mv out "$OUT"
 echo "static site staged at $OUT (base path $BASE, preview=${PREVIEW:-0})"

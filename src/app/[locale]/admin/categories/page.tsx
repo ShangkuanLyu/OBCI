@@ -15,7 +15,9 @@ export default async function AdminCategoriesPage({
   const supabase = await createClient();
   const { data } = await supabase
     .from("news_categories")
-    .select("id, slug, name_zh, name_en, display_order")
+    // "*" rather than naming is_active: the column arrives with migration
+    // 20260902122000, and a named missing column would fail the whole query.
+    .select("*")
     .order("display_order", { ascending: true });
 
   const zh = locale === "zh";
@@ -57,6 +59,11 @@ export default async function AdminCategoriesPage({
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3 text-caption text-grey-500">
+                  {row.is_active === false && (
+                    <span className="rounded-full border border-dashed border-grey-300 px-2 py-0.5">
+                      {zh ? "历史分类" : "Legacy"}
+                    </span>
+                  )}
                   <span>#{row.display_order}</span>
                 </div>
               </Link>

@@ -470,14 +470,17 @@ export const FIXTURE_PORTRAITS: Record<string, string> = {
   "Sunny Sun": "/portraits/sunny-sun.jpg",
 };
 
-/** DOCX §模块五 fee table wording where it differs from the remote rows
- *  (brochure wording): top tier 企业顶级会员, fourth tier 小微企业会员,
- *  individual threshold 自然人创业者. English names await confirmation. */
+/** Confirmed fee-table wording: top tier 企业顶级会员 (DOCX), fourth tier
+ *  小型企业会员 / Small Enterprise Member (owner-confirmed 2026-09-02/03; the
+ *  DOCX table uses a different fourth-tier wording — see
+ *  docs/preview-to-production-matrix.md row 12), individual threshold
+ *  自然人创业者 (DOCX). The other English names await confirmation.
+ *  Mirrored by migration 20260902121000 §4. */
 export const FIXTURE_MEMBERSHIP_NAME_OVERRIDES: Record<
   string,
   { name_zh?: string; name_en?: string; turnover_zh?: string }
 > = {
   "corporate-group": { name_zh: "企业顶级会员" },
-  small: { name_zh: "小微企业会员" },
+  small: { name_zh: "小型企业会员", name_en: "Small Enterprise Member" },
   individual: { turnover_zh: "自然人创业者" },
 };

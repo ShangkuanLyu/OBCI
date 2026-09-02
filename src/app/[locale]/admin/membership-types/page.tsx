@@ -2,6 +2,7 @@ import { setRequestLocale } from "next-intl/server";
 import Link from "next/link";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { formatFeeAmount } from "@/lib/utils/fee";
 
 export default async function AdminMembershipTypesPage({
   params,
@@ -61,7 +62,7 @@ export default async function AdminMembershipTypesPage({
                       ? zh
                         ? "面议"
                         : "On request"
-                      : `${row.currency} ${row.price_annual}`}
+                      : formatFeeAmount(Number(row.price_annual), row.currency)}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3 text-caption text-grey-500">

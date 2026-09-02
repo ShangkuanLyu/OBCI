@@ -8,6 +8,11 @@ import { getNewsCategories, getPublishedNews } from "@/services/news";
 import { getChapters } from "@/services/organisation";
 import { categoryOptions, tagOptions } from "@/lib/news/filter";
 import {
+  isLegacyNewsCategory,
+  newsCategoryName,
+  resolveNewsCategories,
+} from "@/lib/news/categories";
+import {
   designFixturesEnabled,
   fixtureNewsTags,
 } from "@/lib/fixtures/design-review";
@@ -53,6 +58,15 @@ export default async function NewsIndexPage({
   // Preview build: the health articles carry their chapter tags from the
   // fixture map until the approved data update tags the rows themselves.
   const fixtures = designFixturesEnabled();
+  // Category structure: the five DOCX first-level categories are always
+  // offered (preview enforces them; production reads the CMS rows, whose
+  // is_active flag marks legacy categories). Articles in a legacy category
+  // stay listed under "全部", marked "历史分类待整理".
+  const resolvedCategories = resolveNewsCategories(categories, {
+    enforceDocx: fixtures,
+  });
+  // Per-article name/legacy flag come from the article's own embedded
+  // category row — the same call the article page and the home page make.
   const items: NewsListItem[] = articles.map((article) => ({
     id: article.id,
     slug: article.slug,
@@ -60,7 +74,10 @@ export default async function NewsIndexPage({
     summary: loc(article, "summary", locale),
     date: formatDate(article.published_at, locale),
     categorySlug: article.category?.slug ?? null,
-    categoryName: article.category ? loc(article.category, "name", locale) : "",
+    categoryName: article.category
+      ? newsCategoryName(article.category, locale, fixtures)
+      : "",
+    categoryLegacy: isLegacyNewsCategory(article.category, fixtures),
     image: mediaUrl(article.cover_image_path),
     featured: article.is_featured,
     tags: fixtures
@@ -70,7 +87,11 @@ export default async function NewsIndexPage({
       : (article.tags ?? []),
   }));
   const categoryItems = categoryOptions(
-    categories.map((cat) => ({ slug: cat.slug, name: loc(cat, "name", locale) })),
+    resolvedCategories.map((category) => ({
+      slug: category.slug,
+      name: newsCategoryName(category, locale, false),
+      legacy: category.legacy,
+    })),
     items,
   );
   const chapterNames = new Map(

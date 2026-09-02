@@ -62,10 +62,12 @@ export async function generateMetadata({
     locale,
     path: `/chapters/${slug}`,
     title: loc(chapter, "name", l),
+    // Fallback names this chapter; it must not be the index standfirst,
+    // whose "{count}" argument is only known on the index page.
     description:
       loc(chapter, "tagline", l) ||
       toParagraphs(loc(chapter, "description", l))[0] ||
-      t("standfirst"),
+      t("detailDescription", { name: loc(chapter, "name", l) }),
   });
 }
 

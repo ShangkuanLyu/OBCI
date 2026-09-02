@@ -18,13 +18,15 @@ import {
 // Mirror of the published corpus on the remote project (2026-09-02):
 // categories, featured flags and the health-chapter tags the preview
 // build applies. Titles are abbreviated but keep the searchable terms.
+// The five DOCX categories are first-level; trade-cooperation is a legacy
+// CMS category (kept for its two articles, never a tab).
 const CATEGORIES = [
   { slug: "association-news", name: "商会动态" },
-  { slug: "trade-cooperation", name: "中澳经贸合作" },
   { slug: "policy-insights", name: "中澳经贸政策" },
   { slug: "market-insights", name: "行业市场资讯" },
   { slug: "going-global", name: "出海实操指南" },
   { slug: "events-coverage", name: "活动预告回顾" },
+  { slug: "trade-cooperation", name: "中澳经贸合作", legacy: true },
 ];
 
 const item = (
@@ -43,6 +45,8 @@ const item = (
   date: "",
   categorySlug,
   categoryName: CATEGORIES.find((c) => c.slug === categorySlug)?.name ?? "",
+  categoryLegacy:
+    CATEGORIES.find((c) => c.slug === categorySlug)?.legacy === true,
   image: null,
   featured,
   tags,
@@ -87,16 +91,25 @@ describe("category filter", () => {
     assert.equal(regular.length, 3);
   });
 
-  test("中澳经贸合作: both articles are featured yet still listed", () => {
-    const filter = { ...EMPTY_FILTER, category: "trade-cooperation" };
-    const filtered = filterNews(ITEMS, filter);
-    assert.equal(filtered.length, 2);
-    const { pinned, regular } = layoutNews(filtered, filter);
-    assert.equal(pinned.length, 0);
-    assert.deepEqual(slugs(regular), [
+  test("中澳经贸合作 (legacy): both articles stay in 全部, marked, and are not a tab", () => {
+    const all = filterNews(ITEMS, EMPTY_FILTER);
+    const legacy = all.filter((i) => i.categoryLegacy);
+    assert.deepEqual(slugs(legacy), [
       "obc-delegation-visits-liaoning-ccpit",
       "taizhou-delegation-visits-melbourne-cooperation",
     ]);
+    // Both are featured and still appear (pinned strip) under 全部.
+    const { pinned } = layoutNews(all, EMPTY_FILTER);
+    assert.ok(legacy.every((i) => pinned.some((p) => p.id === i.id)));
+    assert.ok(
+      !categoryOptions(CATEGORIES, ITEMS).some((o) => o.slug === "trade-cooperation"),
+      "legacy category is never offered as a tab",
+    );
+    // The pure filter still matches by slug; the UI never offers the legacy
+    // slug and treats a hand-edited ?category= that is not a tab as 全部
+    // (NewsIndex only accepts slugs present in its options).
+    const filter = { ...EMPTY_FILTER, category: "trade-cooperation" };
+    assert.equal(filterNews(ITEMS, filter).length, 2);
   });
 
   test("行业市场资讯 lists the two health-industry articles", () => {
@@ -113,21 +126,38 @@ describe("category filter", () => {
     assert.equal(filterNews(ITEMS, filter).length, 3);
   });
 
-  test("category tabs only offer categories that have articles, with counts", () => {
+  test("category tabs offer all five DOCX categories with counts (0 = empty state), never the legacy one", () => {
     const options = categoryOptions(CATEGORIES, ITEMS);
     assert.deepEqual(
       options.map((o) => [o.slug, o.count]),
       [
         ["association-news", 3],
-        ["trade-cooperation", 2],
+        ["policy-insights", 0],
         ["market-insights", 2],
+        ["going-global", 0],
+        ["events-coverage", 0],
       ],
     );
-    // Every tab that is offered yields a non-empty list.
+    // A tab's count equals what the filter yields; 0 renders the empty state.
     for (const option of options) {
       const filtered = filterNews(ITEMS, { ...EMPTY_FILTER, category: option.slug });
-      assert.ok(filtered.length > 0, `${option.slug} must not be empty`);
+      assert.equal(filtered.length, option.count, option.slug);
     }
+    // No article is invented to fill a category.
+    assert.equal(options.reduce((n, o) => n + o.count, 0), 5);
+    assert.equal(ITEMS.filter((i) => !i.categoryLegacy).length, 5);
+  });
+
+  test("duplicate slugs and blank slugs are ignored", () => {
+    const options = categoryOptions(
+      [
+        { slug: "association-news", name: "A" },
+        { slug: " Association-News ", name: "dup" },
+        { slug: "", name: "blank" },
+      ],
+      ITEMS,
+    );
+    assert.deepEqual(options.map((o) => [o.slug, o.name, o.count]), [["association-news", "A", 3]]);
   });
 });
 

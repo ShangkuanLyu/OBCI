@@ -111,6 +111,7 @@
     "standfirst": "Association updates, trade policy and industry market insights.",
     "all": "All",
     "empty": "No articles in this category yet.",
+    "legacyCategory": "Legacy category · pending review",
     "noResults": "No articles match your search.",
     "noResultsFiltered": "No articles match the current filters.",
     "searchLabel": "Search news",
@@ -216,6 +217,7 @@
   "chapters": {
     "title": "Industry Chapters",
     "standfirst": "{count} industry chapters matching members with the resources of their sector.",
+    "detailDescription": "The {name} industry chapter of the Oceania Business Association (OBAI).",
     "secretaryGeneral": "Secretary-General",
     "empty": "Chapter details coming soon.",
     "backToChapters": "Back to chapters",
@@ -247,7 +249,7 @@
     "tiersCta": "View fees and apply online",
     "popular": "Most popular",
     "feeContact": "Contact the secretariat for fees",
-    "perYear": "/ year",
+    "perYear": "/year",
     "applyCta": "Apply online",
     "applyNote": "No fees are payable before your application is approved."
   },

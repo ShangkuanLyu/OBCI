@@ -828,6 +828,9 @@ export type Database = {
         Row: {
           display_order: number
           id: number
+          // Added by migration 20260902122000 (not yet applied): absent on
+          // the remote project until then — readers treat undefined as active.
+          is_active: boolean
           name_en: string
           name_zh: string
           slug: string
@@ -835,6 +838,7 @@ export type Database = {
         Insert: {
           display_order?: number
           id?: never
+          is_active?: boolean
           name_en: string
           name_zh: string
           slug: string
@@ -842,6 +846,7 @@ export type Database = {
         Update: {
           display_order?: number
           id?: never
+          is_active?: boolean
           name_en?: string
           name_zh?: string
           slug?: string

@@ -59,6 +59,12 @@ jobs:
       - name: Build static site
         run: npm run build
 
+      # Fails the deploy on unresolved template variables ({count} …) in
+      # titles, meta/OG/JSON-LD or visible markup, and on heading/metadata
+      # defects — scripts/check-static-output.mjs.
+      - name: Check static output
+        run: npm run check:static
+
       - name: Add Pages extras (.nojekyll, root redirect, 404)
         run: |
           touch out/.nojekyll

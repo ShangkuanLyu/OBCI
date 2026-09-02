@@ -143,16 +143,21 @@ insert into public.site_settings (key, value) values
 )
 on conflict (key) do update set value = excluded.value;
 
--- 4 · Fee-table wording per the DOCX where it differs from the brochure
---     (Chinese only; English names await the chamber's confirmation):
---     top tier 企业顶级会员, fourth tier 小微企业会员, individual threshold
---     自然人创业者. Fees and turnover bands already match the DOCX.
+-- 4 · Fee-table wording: top tier 企业顶级会员 (DOCX; English name awaits
+--     confirmation), fourth tier 小型企业会员 / Small Enterprise Member
+--     (owner-confirmed 2026-09-02/03; the DOCX table uses a different Chinese
+--     wording — see docs/preview-to-production-matrix.md row 12; the remote
+--     row already reads 小型企业会员, its name_en "Small Company Member" is
+--     replaced), individual threshold 自然人创业者 (DOCX). The other English
+--     names are untouched pending confirmation. Fees and turnover bands
+--     already match.
 update public.membership_types
 set name_zh = '企业顶级会员'
 where code = 'corporate-group';
 
 update public.membership_types
-set name_zh = '小微企业会员'
+set name_zh = '小型企业会员',
+    name_en = 'Small Enterprise Member'
 where code = 'small';
 
 update public.membership_types

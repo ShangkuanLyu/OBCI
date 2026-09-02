@@ -17,7 +17,8 @@ export default async function AdminNewsNewPage({
   const [{ data: categories }, { data: chapters }] = await Promise.all([
     supabase
       .from("news_categories")
-      .select("id, name_zh, name_en")
+      // "*": is_active only exists after migration 20260902122000.
+      .select("*")
       .order("display_order", { ascending: true }),
     supabase
       .from("industry_chapters")
@@ -35,7 +36,13 @@ export default async function AdminNewsNewPage({
         <NewsForm
           categories={(categories ?? []).map((category) => ({
             id: category.id,
-            name: zh ? category.name_zh : category.name_en,
+            name:
+              (zh ? category.name_zh : category.name_en) +
+              (category.is_active === false
+                ? zh
+                  ? "（历史分类）"
+                  : " (legacy)"
+                : ""),
           }))}
           chapters={(chapters ?? []).map((chapter) => ({
             slug: chapter.slug,

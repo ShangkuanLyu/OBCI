@@ -174,11 +174,28 @@ export function NewsIndex({
   const clearButtonClass =
     "text-caption font-medium text-sea-800 underline decoration-grey-300 underline-offset-4 transition-colors hover:text-sea-600";
 
+  // A category-only tab with no article yet is an empty state, not a
+  // failed search.
+  const categoryOnly =
+    filter.category !== null && filter.tag === null && query === "";
+
   const meta = (item: NewsListItem) => (
     <p className="flex flex-wrap items-center gap-3 text-caption">
       {item.categoryName !== "" && (
-        <span className="rounded-full bg-sea-50 px-2.5 py-1 font-medium text-sea-800">
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 font-medium",
+            item.categoryLegacy
+              ? "border border-dashed border-grey-300 text-grey-600"
+              : "bg-sea-50 text-sea-800",
+          )}
+        >
           {item.categoryName}
+          {item.categoryLegacy && (
+            <span className="ml-1.5 font-normal text-grey-500">
+              · {t("legacyCategory")}
+            </span>
+          )}
         </span>
       )}
       {item.featured && !filtering && (
@@ -319,7 +336,7 @@ export function NewsIndex({
         {filtered.length === 0 ? (
           <>
             <p className="text-body text-grey-500">
-              {filtering ? t("noResultsFiltered") : t("empty")}
+              {filtering && !categoryOnly ? t("noResultsFiltered") : t("empty")}
             </p>
             {filtering && (
               <button
@@ -358,8 +375,16 @@ export function NewsIndex({
                   href={`/news/${item.slug}`}
                   className="group block border-l-2 border-grey-100 pl-4 transition-colors hover:border-gold-600"
                 >
-                  {item.date !== "" && (
-                    <p className="text-caption text-grey-500">{item.date}</p>
+                  {(item.date !== "" || item.categoryLegacy) && (
+                    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-grey-500">
+                      {item.date !== "" && <span>{item.date}</span>}
+                      {/* Legacy category stays visible even when pinned. */}
+                      {item.categoryLegacy && (
+                        <span className="rounded-full border border-dashed border-grey-300 px-2 py-0.5 text-grey-600">
+                          {item.categoryName} · {t("legacyCategory")}
+                        </span>
+                      )}
+                    </p>
                   )}
                   <h3 className="mt-1.5 text-body font-semibold leading-snug text-ink transition-colors duration-200 group-hover:text-sea-800">
                     {item.title}

@@ -8,6 +8,8 @@ import { ShareActions } from "@/components/news/ShareActions";
 import { ButtonLink } from "@/components/ui/Button";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
+import { isLegacyNewsCategory, newsCategoryName } from "@/lib/news/categories";
+import { designFixturesEnabled } from "@/lib/fixtures/design-review";
 import { renderMarkdown } from "@/lib/utils/markdown";
 import { absoluteUrl, pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
@@ -65,6 +67,11 @@ export default async function NewsArticlePage({
     .filter((a) => a.slug !== slug)
     .slice(0, 3);
 
+  // Legacy category (outside the DOCX five): shown, but marked as pending
+  // re-assignment — see lib/news/categories.
+  const fixtures = designFixturesEnabled();
+  const categoryLegacy = isLegacyNewsCategory(article.category, fixtures);
+
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -91,8 +98,19 @@ export default async function NewsArticlePage({
         <Container className="pb-12 pt-12 md:pb-14 md:pt-16">
           <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-caption">
             {article.category && (
-              <span className="rounded-full bg-white px-2.5 py-1 font-medium text-sea-800">
-                {loc(article.category, "name", locale)}
+              <span
+                className={
+                  categoryLegacy
+                    ? "rounded-full border border-dashed border-grey-300 bg-white px-2.5 py-1 font-medium text-grey-600"
+                    : "rounded-full bg-white px-2.5 py-1 font-medium text-sea-800"
+                }
+              >
+                {newsCategoryName(article.category, locale, fixtures)}
+                {categoryLegacy && (
+                  <span className="ml-1.5 font-normal text-grey-500">
+                    · {t("legacyCategory")}
+                  </span>
+                )}
               </span>
             )}
             <span className="text-grey-500">

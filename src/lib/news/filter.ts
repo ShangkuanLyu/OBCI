@@ -11,6 +11,9 @@ export type NewsFilterItem = {
   date: string;
   categorySlug: string | null;
   categoryName: string;
+  /** Category is legacy (see lib/news/categories): listed under "全部",
+   *  marked "历史分类待整理", never offered as a tab. */
+  categoryLegacy: boolean;
   image: string | null;
   featured: boolean;
   tags: string[];
@@ -92,10 +95,12 @@ export function layoutNews<T extends NewsFilterItem>(
 
 export type CategoryOption = { slug: string; name: string; count: number };
 
-/** Categories offered as tabs: only those with at least one item, in the
- *  order supplied (display_order), de-duplicated by slug. */
+/** Categories offered as tabs: every non-legacy category in the order
+ *  supplied, de-duplicated by slug, each with its article count — a
+ *  category with no article yet is still offered (count 0, empty state).
+ *  Legacy categories are never tabs; their articles stay in "全部". */
 export function categoryOptions(
-  categories: { slug: string; name: string }[],
+  categories: { slug: string; name: string; legacy?: boolean }[],
   items: NewsFilterItem[],
 ): CategoryOption[] {
   const counts = new Map<string, number>();
@@ -109,8 +114,8 @@ export function categoryOptions(
     const slug = normaliseSlug(category.slug);
     if (!slug || seen.has(slug)) continue;
     seen.add(slug);
-    const count = counts.get(slug) ?? 0;
-    if (count > 0) options.push({ slug, name: category.name, count });
+    if (category.legacy) continue;
+    options.push({ slug, name: category.name, count: counts.get(slug) ?? 0 });
   }
   return options;
 }

@@ -7,6 +7,7 @@ import { getMembershipTypes } from "@/services/membership";
 import { getContentBlocks } from "@/services/content";
 import { getServiceOfferings } from "@/services/abs";
 import { loc } from "@/lib/utils/l10n";
+import { formatFeeAmount } from "@/lib/utils/fee";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
@@ -26,14 +27,6 @@ export async function generateMetadata({
     title: t("title"),
     description: t("standfirst"),
   });
-}
-
-function formatPrice(amount: number, currency: string, locale: Locale): string {
-  return new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-AU", {
-    style: "currency",
-    currency: currency || "AUD",
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 export default async function MembershipPage({
@@ -177,7 +170,7 @@ export default async function MembershipPage({
                   </span>
                   <span className="text-body font-semibold tabular-nums text-sea-800">
                     {type.price_annual != null
-                      ? `${formatPrice(Number(type.price_annual), type.currency, locale)} ${t("perYear")}`
+                      ? `${formatFeeAmount(Number(type.price_annual), type.currency)}${t("perYear")}`
                       : t("feeContact")}
                   </span>
                 </li>

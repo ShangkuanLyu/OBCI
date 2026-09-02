@@ -94,6 +94,23 @@ export function CategoryForm({
           </Field>
         </div>
 
+        <label className="flex items-start gap-3 text-small text-ink">
+          <input
+            type="checkbox"
+            name="is_active"
+            defaultChecked={item?.is_active ?? true}
+            className="mt-1 h-4 w-4 rounded border-grey-300"
+          />
+          <span>
+            {zh ? "作为一级分类显示" : "Show as a first-level category"}
+            <span className="block text-caption text-grey-500">
+              {zh
+                ? "取消勾选 = 历史分类：不显示为分类页签；其文章继续发布，并标记「历史分类待整理」，直至重新归类。"
+                : "Unchecked = legacy category: not offered as a tab; its articles stay published, marked “legacy category · pending review”, until re-assigned."}
+            </span>
+          </span>
+        </label>
+
         <div className="pt-2">
           <AdminButton type="submit" disabled={pending}>
             {pending

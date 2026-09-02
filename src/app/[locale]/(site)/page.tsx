@@ -13,6 +13,8 @@ import { getContentBlocks } from "@/services/content";
 import { getServiceOfferings } from "@/services/abs";
 import { getSiteSettings } from "@/services/settings";
 import { isModuleConfirmed } from "@/lib/review";
+import { isLegacyNewsCategory, newsCategoryName } from "@/lib/news/categories";
+import { designFixturesEnabled } from "@/lib/fixtures/design-review";
 import { loc, formatDate, imageUrl, melbourneDay, mediaUrl } from "@/lib/utils/l10n";
 import { countWord } from "@/lib/utils/count-word";
 import { pageMetadata } from "@/lib/seo";
@@ -61,6 +63,7 @@ export default async function HomePage({
   const tEvents = await getTranslations("events");
   const tMembership = await getTranslations("membership");
   const tLeadership = await getTranslations("leadership");
+  const tNews = await getTranslations("news");
 
   const [content, abs, news, upcoming, past, chapters, leadership, settings] =
     await Promise.all([
@@ -301,8 +304,19 @@ export default async function HomePage({
                       <div className="p-6">
                         <p className="flex items-center gap-3 text-caption">
                           {article.category && (
-                            <span className="rounded-full bg-sea-50 px-2.5 py-1 font-medium text-sea-800">
-                              {loc(article.category, "name", locale)}
+                            <span
+                              className={
+                                isLegacyNewsCategory(article.category, designFixturesEnabled())
+                                  ? "rounded-full border border-dashed border-grey-300 px-2.5 py-1 font-medium text-grey-600"
+                                  : "rounded-full bg-sea-50 px-2.5 py-1 font-medium text-sea-800"
+                              }
+                            >
+                              {newsCategoryName(article.category, locale, designFixturesEnabled())}
+                              {isLegacyNewsCategory(article.category, designFixturesEnabled()) && (
+                                <span className="ml-1.5 font-normal text-grey-500">
+                                  · {tNews("legacyCategory")}
+                                </span>
+                              )}
                             </span>
                           )}
                           <span className="text-grey-500">
