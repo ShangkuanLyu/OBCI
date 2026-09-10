@@ -92,7 +92,14 @@ export default async function HomePage({
     <>
       {/* 1 · Banner carousel (CMS-driven; only complete banners ship). */}
       {content && content.banners.length > 0 ? (
-        <HeroCarousel banners={content.banners} />
+        <HeroCarousel
+          banners={content.banners.map(({ image_path, ...banner }) => ({
+            ...banner,
+            // imageUrl() (not mediaUrl()) so a site asset in public/
+            // — "/news-media/…" — resolves to the site, not the storage bucket.
+            image_url: imageUrl(image_path),
+          }))}
+        />
       ) : (
         <section className="bg-sea-900 text-white">
           <Container className="pb-20 pt-16 md:pb-24 md:pt-24">

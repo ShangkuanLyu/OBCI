@@ -11,13 +11,24 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/cn";
-import { mediaUrl } from "@/lib/utils/l10n";
 import type { BannerData } from "@/lib/content/types";
 
 const AUTOPLAY_MS = 7000;
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const TITLE_CLASS =
   "mt-5 max-w-[16em] text-[2rem] font-semibold leading-[1.2] tracking-[-0.02em] md:text-[2.9rem] md:leading-[1.16]";
+
+/**
+ * A banner whose image URL the server has already resolved. `image_path`
+ * may be either a storage key or a site asset shipped in public/, and
+ * telling them apart goes through basePath(), which reads the server-only
+ * STATIC_EXPORT — resolving here would see "" on the client and mismatch
+ * the server markup under static export. Same contract as Header/Footer,
+ * which take an already-resolved logo src.
+ */
+export type ResolvedBanner = Omit<BannerData, "image_path"> & {
+  image_url: string | null;
+};
 
 function subscribeReducedMotion(onChange: () => void) {
   const query = window.matchMedia(REDUCED_MOTION_QUERY);
@@ -33,7 +44,7 @@ function subscribeReducedMotion(onChange: () => void) {
  * in one grid cell so the band height never changes between slides.
  * With a single banner it renders as a static hero without controls.
  */
-export function HeroCarousel({ banners }: { banners: BannerData[] }) {
+export function HeroCarousel({ banners }: { banners: ResolvedBanner[] }) {
   const t = useTranslations("home");
   const tCommon = useTranslations("common");
   const locale = useLocale();
@@ -105,7 +116,7 @@ export function HeroCarousel({ banners }: { banners: BannerData[] }) {
       <div className="relative mx-auto grid w-full max-w-[69.5rem] px-6 md:px-10">
         {banners.map((banner, i) => {
           const active = i === index;
-          const image = banner.image_path ? mediaUrl(banner.image_path) : null;
+          const image = banner.image_url;
           return (
             <div
               key={banner.key || i}
