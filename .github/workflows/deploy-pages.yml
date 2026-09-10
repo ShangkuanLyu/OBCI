@@ -1,18 +1,18 @@
-# Static build of the public site → GitHub Pages.
-# The admin CMS, auth and the Stripe webhook need a Node host (e.g. Vercel)
-# and are stripped from this build; public forms talk to Supabase directly
-# from the browser, so they work on the static site.
+# Static build of the public site → GitHub Pages. STANDBY ONLY.
 #
-# The daily schedule re-builds the site so CMS content edits reach the
-# static deployment; you can also run it manually from the Actions tab.
+# Production moved to Vercel on 2026-09-10 (project obci-website), where the
+# site runs as a full Next.js app: the admin CMS and auth work, and content
+# edits reach the site through ISR within minutes. This workflow builds the
+# stripped static export instead — no CMS, no auth, no Stripe webhook — and
+# is kept as a fallback host.
+#
+# It no longer runs on push or on a schedule: two automatically published
+# copies of the site drift apart and confuse everyone about which is live.
+# Run it by hand from the Actions tab if the Pages copy is ever needed.
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-  schedule:
-    - cron: "0 21 * * *" # 07:00 Melbourne (AEST) daily content refresh
 
 permissions:
   contents: read

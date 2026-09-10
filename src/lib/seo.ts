@@ -2,12 +2,22 @@ import type { Metadata } from "next";
 import { routing } from "@/i18n/routing";
 
 /**
- * NEXT_PUBLIC_SITE_URL already contains the deployment base path
- * (e.g. https://shangkuanlyu.github.io/OBCI), so URLs built here are
- * correct on GitHub Pages without further prefixing.
+ * Absolute origin the deployment serves from, used for canonical URLs, the
+ * sitemap, Open Graph images and JSON-LD. Every consumer is a server module
+ * (pages, metadata, robots, sitemap), so a server-only variable is enough.
+ *
+ * NEXT_PUBLIC_SITE_URL wins and must include the deployment base path when
+ * one is used (a static export under a sub-path, e.g.
+ * https://example.github.io/OBCI). On Vercel, where the site is served from
+ * the domain root, VERCEL_PROJECT_PRODUCTION_URL is the fallback: it is set
+ * on every deployment and names the production domain, so a project deploys
+ * with correct absolute URLs before any variable is configured.
  */
+const VERCEL_PRODUCTION_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (VERCEL_PRODUCTION_URL ? `https://${VERCEL_PRODUCTION_URL}` : undefined) ??
+  "http://localhost:3000"
 ).replace(/\/+$/, "");
 
 /** The static export serves trailing-slashed directory URLs; the Node

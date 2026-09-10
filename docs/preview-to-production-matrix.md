@@ -4,7 +4,8 @@
 >
 > - 分支：`obai-redesign-review` · 品牌 **OBCI／大洋洲工商业委员会／Oceania Business Council**（法定名 Oceania Business Association Incorporated 仅用于法务内容）
 > - Supabase 项目：`gmglssmdrsackqgkqdbu`
-> - 部署：GitHub Pages 静态导出（`https://shangkuanlyu.github.io/OBCI`，base path `/OBCI`），workflow 见 `.github/workflows/deploy-pages.yml`
+> - 部署：**Vercel**（项目 `obci-website`，2026-09-10 迁入），以完整 Next.js 应用运行——后台 CMS、登录、Server Actions 与 Stripe webhook 均可用，公开页每 5 分钟 ISR revalidate，后台改动无需重新部署即可上线。推送 `main` 自动构建并发布。
+> - GitHub Pages 静态导出（`https://shangkuanlyu.github.io/OBCI`）降级为**备用**：`.github/workflows/deploy-pages.yml` 只保留手动触发，不再随推送或定时发布（两份自动发布的副本会各自漂移）。该构建剥离了后台与鉴权。
 > - **审查脚手架已全部移除**：预览部署、审查横幅、「待商会确认」标记、`ReviewNote`、设计 fixtures、法律草稿提示、`public/preview-media` 均不再存在。上线后**数据库是唯一事实来源**。
 
 ## 1 · 本轮发布了什么
@@ -44,7 +45,7 @@
 
 | 内容 | 维护位置 |
 |---|---|
-| 新闻、活动、分会、领导、合作机构、图集 | 后台 CMS（`/zh/admin`，需 Node 主机；静态站点由 workflow 每日 21:00 UTC 重新构建，CMS 改动次日生效，也可在 Actions 页手动触发） |
+| 新闻、活动、分会、领导、合作机构、图集 | 后台 CMS（正式站 `/zh/admin`，用商会管理员账号登录）。改动最多 5 分钟内自动生效（ISR revalidate），无需重新部署 |
 | 品牌、联系方式、关于页各区块、Banner、议员名录、秘书处、缴费信息、法律版本号 | 后台 CMS「站点设置」模块（写入 `site_settings`，合并保存） |
 | 会员等级名称、门槛、权益 | 后台 CMS 会员模块（`membership_types`） |
 | 法律正文（条款／隐私／无障碍／章程页说明） | 仓库内页面源码；改动后在后台更新对应版本号 |
@@ -63,7 +64,8 @@
 | 本地开发（含后台） | `npm run dev` |
 | 本地生产形态静态构建 | `bash scripts/build-static.sh` → 产物 staged 到 `$TMPDIR/obai-preview-site`，用 `node scripts/pages-preview-server.mjs` 在 `http://localhost:4173/OBCI/` 浏览 |
 | 静态输出检查 | `npm run check:static`（`scripts/check-static-output.mjs out`）：未解析模板变量、标题层级、canonical/hreflang/OG/Twitter/JSON-LD、noindex 策略（仅未发布的法律文件与错误页可 noindex）、过期活动的 JSON-LD 状态、文章 `og:type`、禁用占位文案 |
-| 正式部署 | 推送 `main` → `.github/workflows/deploy-pages.yml`（每日定时重建，也可手动触发） |
+| 正式部署 | 推送 `main` → Vercel 自动构建并发布（项目 `obci-website`）。环境变量只需 `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`，绑定自定义域名后再加 `NEXT_PUBLIC_SITE_URL`；**不要**设置 `STATIC_EXPORT` 或 `NEXT_PUBLIC_BASE_PATH` |
+| 备用静态站 | 在 Actions 页手动运行 `Deploy to GitHub Pages`（无后台、无鉴权） |
 
 ## 6 · 未了事项（商会仍欠的编辑工作）
 

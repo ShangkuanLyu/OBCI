@@ -8,7 +8,7 @@ Bilingual (中文 / English) website of the **Oceania Business Council 大洋洲
 - **next-intl** — `zh` (default) and `en`, both prefixed (`/zh/…`, `/en/…`)
 - **Supabase** — Postgres (content + membership), Auth (admin sign-in), Storage (`media`, `member-documents`); RLS is the security boundary
 - **Stripe** — membership checkout + webhook (inert until keys are set)
-- Deployed as a **static export to GitHub Pages**; the admin CMS, auth and the webhook need a Node host and are stripped from that build
+- Hosted on **Vercel** (project `obci-website`) as a full Next.js app, so the admin CMS and auth work and content edits reach the site through ISR. A stripped static export for GitHub Pages is kept as a standby (`npm run build:static`)
 
 ## Running it
 
@@ -39,7 +39,11 @@ node scripts/pages-preview-server.mjs      # http://localhost:4173/OBCI/
 
 `scripts/check-static-output.mjs` fails the build on unresolved template variables (`{count}` …) in titles, meta/OG/JSON-LD or visible markup, broken heading structure, missing canonical/hreflang/OG/Twitter/JSON-LD, unexpected `noindex`, past events still marked `EventScheduled`, and forbidden placeholder copy. The same check gates the deploy.
 
-Deployment: pushing to `main` runs `.github/workflows/deploy-pages.yml`, which also rebuilds daily at 07:00 Melbourne so CMS edits reach the static site (or run it by hand from the Actions tab).
+## Deployment
+
+Production is **Vercel** (project `obci-website`): pushing to `main` builds and promotes automatically. Public pages are prerendered and revalidate every five minutes, so CMS edits appear without a deploy; the admin CMS, sign-in, server actions and the Stripe webhook run as functions. Required project environment variables are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; set `NEXT_PUBLIC_SITE_URL` once a custom domain is attached (until then the code falls back to `VERCEL_PROJECT_PRODUCTION_URL`, so canonical URLs, the sitemap and share images stay correct). Never set `STATIC_EXPORT` or `NEXT_PUBLIC_BASE_PATH` there.
+
+`.github/workflows/deploy-pages.yml` is the standby static export for GitHub Pages. It runs only when started by hand from the Actions tab: two automatically published copies drift apart, and that build has no CMS or auth.
 
 ## Where content is edited
 
