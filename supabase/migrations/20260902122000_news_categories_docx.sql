@@ -1,6 +1,7 @@
 -- 009 · News categories per the DOCX (§资讯中心): five first-level categories.
 --
--- NOT applied. Additive: one column with a default, an upsert-by-slug of the
+-- Applied to the remote project on 2026-09-10 (launch), as migration
+-- news_categories_first_level. Additive: one column with a default, an upsert-by-slug of the
 -- five confirmed categories (names + order), and one flag update. No row is
 -- deleted; every article keeps its category_id. Mirrors
 -- src/lib/news/categories.ts (DOCX_NEWS_CATEGORIES) — keep the two in step.

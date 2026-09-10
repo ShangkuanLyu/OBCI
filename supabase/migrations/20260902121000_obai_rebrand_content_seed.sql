@@ -1,7 +1,6 @@
 -- 008 · OBCI rebrand + 2026 organisation / content seed (data-only, additive)
--- STATUS: authored locally on 2026-09-02, rewritten 2026-09-10 to the owner's
--- decisions D1–D11 (wave-2 spec); NOT yet applied to the remote project.
--- Apply only after explicit approval, and only AFTER
+-- STATUS: applied to the remote project on 2026-09-10 (launch), as migration
+-- obci_rebrand_content_seed, after
 -- 20260902120000_application_form_v2.sql (schema first, then this data:
 -- industry_chapters.deputy_secretary_general, the widened
 -- leadership.group_key CHECK and events.tags are all used below).

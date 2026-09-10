@@ -7,8 +7,10 @@
 -- the site under public/news-media/<slug>/ and are referenced with a leading
 -- slash, so no Storage upload is required.
 --
--- Apply after 20260902120000 → 121000 → 122000 (the five first-level
--- categories must exist before the category sub-selects run).
+-- Applied to the remote project on 2026-09-10 (launch), after
+-- 20260902120000 → 121000 → 122000 (the five first-level categories must
+-- exist before the category sub-selects run). Article bodies are edited in
+-- the CMS from here on; re-running this seed would overwrite those edits.
 
 -- beijing-poly-art-cultural-cooperation (source: docs/support docs/V2/新闻提炼(1).docx)
 insert into public.news (slug, category_id, title_zh, title_en, summary_zh, summary_en, body_zh, body_en, tags, cover_image_path, status, published_at, is_featured, author_name, source_url)

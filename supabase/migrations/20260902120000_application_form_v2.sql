@@ -1,10 +1,11 @@
 -- 007 · Application form v2, chapter template columns, industry tags on events
--- STATUS: authored locally on 2026-09-02; NOT yet applied to the remote
--- project. Apply only after explicit approval, then regenerate types.
--- PRECONDITION: the remote project already carries the six 20260827*
--- migrations (company_address/fax/mobile/company_intro/directory_consent/
--- agreed_terms/agreed_marketing etc.) that are not yet mirrored in this
--- folder — run `supabase db pull` first so the local chain reproduces them.
+-- STATUS: applied to the remote project on 2026-09-10 (launch), as
+-- migration application_form_v2.
+-- NOTE: the remote project also carries six 20260827* migrations
+-- (company_address/fax/mobile/company_intro/directory_consent/
+-- agreed_terms/agreed_marketing etc.) that are still not mirrored in this
+-- folder, so this chain cannot be replayed on an empty database as is —
+-- run `supabase db pull` before recreating the project elsewhere.
 --
 -- Additive only:
 --  * membership_applications gains the remaining DOCX/brief fields:
