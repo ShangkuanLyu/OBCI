@@ -1,9 +1,7 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
 import { requireStaff } from "@/lib/auth";
-import { isPreviewDeployment } from "@/lib/preview";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { SignOutButton } from "@/components/admin/SignOutButton";
-import { PreviewBanner } from "@/components/layout/PreviewBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -17,24 +15,14 @@ export default async function AdminLayout({
   const { locale } = await params;
   setRequestLocale(locale);
   const session = await requireStaff(locale);
-  const tCommon = await getTranslations("common");
 
   return (
     <div className="flex min-h-dvh flex-col">
-      {/* The CMS is stripped from the static export; this covers a Node-mode
-          preview so staff never write to production from a review URL
-          without seeing the notice. */}
-      {isPreviewDeployment() && (
-        <PreviewBanner
-          badge={tCommon("previewBadge")}
-          text={tCommon("previewBanner")}
-        />
-      )}
       <div className="flex min-h-0 flex-1 bg-grey-50">
         <aside className="hidden w-60 shrink-0 flex-col justify-between bg-sea-950 px-5 py-6 text-white md:flex">
           <div>
             <p className="px-3 text-caption font-semibold tracking-[0.08em] text-gold-500">
-              OBAI · CMS
+              OBCI · CMS
             </p>
             <div className="mt-8">
               <AdminNav locale={locale} role={session.profile.role} />

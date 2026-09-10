@@ -49,8 +49,9 @@ export function mediaUrl(path: string | null): string | null {
 }
 
 /**
- * Image URL for content rows: a leading "/" marks a local public asset
- * (used by the design-review preview); anything else is a storage path.
+ * Image URL for content rows: a leading "/" marks a site asset shipped in
+ * public/ (article photographs, portraits); anything else is a Supabase
+ * storage path.
  */
 export function imageUrl(path: string | null): string | null {
   if (!path) return null;

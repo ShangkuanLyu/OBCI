@@ -57,9 +57,23 @@ export type BilingualTextSettings = {
   text_en: string;
 };
 
-export type MemberBenefitsSettings = {
+/** Two textareas, one item per line, matched by line index (member
+ *  benefits, main objectives). */
+export type LineListSettings = {
   zh: string;
   en: string;
+};
+
+export type OutlookSettings = {
+  title_zh: string;
+  title_en: string;
+  paragraphs: BilingualTextSettings[];
+};
+
+/** Council roster textarea: one member per line
+ *  `name_en | name_zh | note_en | note_zh` (lib/utils/council-lines.mjs). */
+export type CouncilSettings = {
+  lines: string;
 };
 
 export type PillarSettings = {
@@ -105,6 +119,16 @@ export type LegalSettings = {
   privacy_version: string;
 };
 
+/** Council bank account published on the application page for manual fee
+ *  payment (site_settings.bank). Values print exactly as stored. */
+export type BankSettings = {
+  account_name: string;
+  bank_name: string;
+  bsb: string;
+  account_number: string;
+  cards: string;
+};
+
 /* Option lists mirror the enums validated in settings/actions.ts; contact
    values are typed against lib/review.ts CONTACT_FIELDS. */
 const CONTACT_FIELD_OPTIONS: { value: ContactField; zh: string; en: string }[] = [
@@ -120,7 +144,7 @@ const CONTACT_FIELD_OPTIONS: { value: ContactField; zh: string; en: string }[] =
 const ORG_KIND_OPTIONS: { value: string; zh: string; en: string }[] = [
   { value: "leadership", zh: "领导团队", en: "Leadership" },
   { value: "committee", zh: "委员会", en: "Committee" },
-  { value: "chapters", zh: "行业分会（自动展开）", en: "Chapters (auto-expanded)" },
+  { value: "chapters", zh: "专业分会（自动展开）", en: "Professional committees (auto-expanded)" },
   { value: "secretariat", zh: "秘书处", en: "Secretariat" },
   { value: "other", zh: "其他", en: "Other" },
 ];
@@ -174,6 +198,51 @@ function BilingualTextSection({
             rows={rows}
             maxLength={maxLength}
             defaultValue={value.text_en}
+          />
+        </Field>
+      </div>
+    </section>
+  );
+}
+
+function LineListSection({
+  title,
+  hint,
+  name,
+  labelZh,
+  labelEn,
+  value,
+  rows = 6,
+}: {
+  title: string;
+  hint: string;
+  name: string;
+  labelZh: string;
+  labelEn: string;
+  value: LineListSettings;
+  rows?: number;
+}) {
+  return (
+    <section className={sectionClass}>
+      <h2 className="text-h4 font-semibold text-ink">{title}</h2>
+      <p className="mt-1 text-caption text-grey-500">{hint}</p>
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <Field label={labelZh} htmlFor={`${name}_zh`}>
+          <TextArea
+            id={`${name}_zh`}
+            name={`${name}_zh`}
+            rows={rows}
+            maxLength={5000}
+            defaultValue={value.zh}
+          />
+        </Field>
+        <Field label={labelEn} htmlFor={`${name}_en`}>
+          <TextArea
+            id={`${name}_en`}
+            name={`${name}_en`}
+            rows={rows}
+            maxLength={5000}
+            defaultValue={value.en}
           />
         </Field>
       </div>
@@ -238,15 +307,19 @@ export function SettingsForm({
   vision,
   mission,
   coreValues,
+  objectives,
   revenueNote,
   memberBenefits,
   pillars,
+  outlook,
   banners,
   orgStructure,
   strategyCommittee,
   secretariat,
+  council,
   gallery,
   confirmedModules,
+  bank,
   legal,
 }: {
   locale: string;
@@ -256,15 +329,19 @@ export function SettingsForm({
   vision: BilingualTextSettings;
   mission: BilingualTextSettings;
   coreValues: PillarSettings[];
+  objectives: LineListSettings;
   revenueNote: BilingualTextSettings;
-  memberBenefits: MemberBenefitsSettings;
+  memberBenefits: LineListSettings;
   pillars: PillarSettings[];
+  outlook: OutlookSettings;
   banners: BannerSettings[];
   orgStructure: OrgUnitSettings[];
   strategyCommittee: BilingualTextSettings;
   secretariat: BilingualTextSettings;
+  council: CouncilSettings;
   gallery: GallerySettings[];
   confirmedModules: string[];
+  bank: BankSettings;
   legal: LegalSettings;
 }) {
   const zh = locale === "zh";
@@ -637,6 +714,19 @@ export function SettingsForm({
         </div>
       </section>
 
+      <LineListSection
+        title={zh ? "主要宗旨" : "Main objectives"}
+        hint={
+          zh
+            ? "每行一条，中英文按行一一对应；留空则「关于」页不显示宗旨模块。"
+            : "One item per line; zh and en lines are matched by line index. Leave empty to hide the objectives module on the About page."
+        }
+        name="objectives"
+        labelZh={zh ? "宗旨（每行一条）中文" : "Objectives (one per line) 中文"}
+        labelEn={zh ? "宗旨（每行一条）EN" : "Objectives (one per line) EN"}
+        value={objectives}
+      />
+
       <BilingualTextSection
         title={zh ? "营收说明" : "Revenue note"}
         name="revenue_note"
@@ -645,42 +735,18 @@ export function SettingsForm({
         value={revenueNote}
       />
 
-      <section className={sectionClass}>
-        <h2 className="text-h4 font-semibold text-ink">
-          {zh ? "会员权益" : "Member benefits"}
-        </h2>
-        <p className="mt-1 text-caption text-grey-500">
-          {zh
+      <LineListSection
+        title={zh ? "会员权益" : "Member benefits"}
+        hint={
+          zh
             ? "每行一条，中英文按行一一对应。"
-            : "One item per line; zh and en lines are matched by line index."}
-        </p>
-        <div className="mt-5 grid gap-5 md:grid-cols-2">
-          <Field
-            label={zh ? "权益（每行一条）中文" : "Benefits (one per line) 中文"}
-            htmlFor="member_benefits_zh"
-          >
-            <TextArea
-              id="member_benefits_zh"
-              name="member_benefits_zh"
-              rows={6}
-              maxLength={5000}
-              defaultValue={memberBenefits.zh}
-            />
-          </Field>
-          <Field
-            label={zh ? "权益（每行一条）EN" : "Benefits (one per line) EN"}
-            htmlFor="member_benefits_en"
-          >
-            <TextArea
-              id="member_benefits_en"
-              name="member_benefits_en"
-              rows={6}
-              maxLength={5000}
-              defaultValue={memberBenefits.en}
-            />
-          </Field>
-        </div>
-      </section>
+            : "One item per line; zh and en lines are matched by line index."
+        }
+        name="member_benefits"
+        labelZh={zh ? "权益（每行一条）中文" : "Benefits (one per line) 中文"}
+        labelEn={zh ? "权益（每行一条）EN" : "Benefits (one per line) EN"}
+        value={memberBenefits}
+      />
 
       <section className={sectionClass}>
         <h2 className="text-h4 font-semibold text-ink">
@@ -703,12 +769,74 @@ export function SettingsForm({
 
       <section className={sectionClass}>
         <h2 className="text-h4 font-semibold text-ink">
+          {zh ? "年度回顾与展望" : "Review and outlook"}
+        </h2>
+        <p className="mt-1 text-caption text-grey-500">
+          {zh
+            ? "标题与最多 3 段正文；没有任何段落时「关于」页不显示该模块。"
+            : "A title and up to 3 paragraphs; the About page hides the module while no paragraph is set."}
+        </p>
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <Field label={zh ? "标题 中文" : "Title 中文"} htmlFor="outlook_title_zh">
+            <TextInput
+              id="outlook_title_zh"
+              name="outlook_title_zh"
+              maxLength={200}
+              defaultValue={outlook.title_zh}
+            />
+          </Field>
+          <Field label={zh ? "标题 EN" : "Title EN"} htmlFor="outlook_title_en">
+            <TextInput
+              id="outlook_title_en"
+              name="outlook_title_en"
+              maxLength={200}
+              defaultValue={outlook.title_en}
+            />
+          </Field>
+        </div>
+        <div className="mt-5 space-y-5">
+          {outlook.paragraphs.map((paragraph, index) => {
+            const n = index + 1;
+            const prefix = `outlook_${n}`;
+            return (
+              <fieldset key={n} className="rounded-md border border-grey-300 p-4">
+                <legend className="px-1 text-small font-medium text-ink">
+                  {zh ? `段落 ${n}` : `Paragraph ${n}`}
+                </legend>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <Field label={zh ? "正文 中文" : "Text 中文"} htmlFor={`${prefix}_zh`}>
+                    <TextArea
+                      id={`${prefix}_zh`}
+                      name={`${prefix}_zh`}
+                      rows={4}
+                      maxLength={2000}
+                      defaultValue={paragraph.text_zh}
+                    />
+                  </Field>
+                  <Field label={zh ? "正文 EN" : "Text EN"} htmlFor={`${prefix}_en`}>
+                    <TextArea
+                      id={`${prefix}_en`}
+                      name={`${prefix}_en`}
+                      rows={4}
+                      maxLength={2000}
+                      defaultValue={paragraph.text_en}
+                    />
+                  </Field>
+                </div>
+              </fieldset>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className={sectionClass}>
+        <h2 className="text-h4 font-semibold text-ink">
           {zh ? "组织架构" : "Organisational structure"}
         </h2>
         <p className="mt-1 text-caption text-grey-500">
           {zh
-            ? "最多 6 个单位，按顺序显示在架构图中；需同时填写 Key 与名称。类型为「行业分会」的单位会自动展开为当前启用的分会。"
-            : "Up to 6 units, shown in the chart in this order; a unit needs both a key and a name. A unit of kind “Chapters” expands to the active chapters automatically."}
+            ? "最多 6 个单位，按顺序显示在架构图中；需同时填写 Key 与名称。类型为「专业分会」的单位会自动展开为当前启用的分会。"
+            : "Up to 6 units, shown in the chart in this order; a unit needs both a key and a name. A unit of kind “Professional committees” expands to the active committees automatically."}
         </p>
         <div className="mt-5 space-y-5">
           {orgStructure.map((unit, index) => {
@@ -807,7 +935,7 @@ export function SettingsForm({
       />
 
       <BilingualTextSection
-        title={zh ? "专业秘书处" : "Professional secretariat"}
+        title={zh ? "秘书处" : "Secretariat"}
         hint={
           zh
             ? "秘书处介绍；留空则「关于」页不显示该模块。"
@@ -820,6 +948,31 @@ export function SettingsForm({
         rows={4}
         maxLength={2000}
       />
+
+      <section className={sectionClass}>
+        <h2 className="text-h4 font-semibold text-ink">
+          {zh ? "执委会议员" : "Councillors"}
+        </h2>
+        <p className="mt-1 text-caption text-grey-500">
+          {zh
+            ? "每行一位，按名录顺序：英文名 | 中文名 | 英文备注 | 中文备注。备注可省略；只填一种语言的姓名时另一种沿用同名。最多 60 位；留空则领导团队与组织架构页不显示议员名单。"
+            : "One member per line, in roster order: name_en | name_zh | note_en | note_zh. Notes are optional; a name given in one language only is reused for the other. Up to 60 members; leave empty to hide the roster on the leadership and structure pages."}
+        </p>
+        <Field
+          label={zh ? "议员名录" : "Roster"}
+          htmlFor="council_lines"
+          hint="Hon. Ken Smith AM | 肯·史密斯 | Founding President | 创会会长"
+          className="mt-5"
+        >
+          <TextArea
+            id="council_lines"
+            name="council_lines"
+            rows={12}
+            maxLength={10000}
+            defaultValue={council.lines}
+          />
+        </Field>
+      </section>
 
       <section className={sectionClass}>
         <h2 className="text-h4 font-semibold text-ink">
@@ -1067,6 +1220,69 @@ export function SettingsForm({
               {zh ? option.zh : option.en}
             </label>
           ))}
+        </div>
+      </section>
+
+      <section className={sectionClass}>
+        <h2 className="text-h4 font-semibold text-ink">
+          {zh ? "银行账户" : "Bank account"}
+        </h2>
+        <p className="mt-1 text-caption text-grey-500">
+          {zh
+            ? "显示在入会申请页「缴费方式」中，供会员线下缴纳会费；内容按原样显示（BSB 等不会自动加格式）。账户名称须为法定名称，同时作为支票抬头。四项账户信息齐全后才会显示。"
+            : "Shown under “Payment” on the application page for manual fee payment; values print exactly as typed (the BSB is not reformatted). The account name is the legal name and doubles as the cheque payee. The block appears only when the four account fields are all filled."}
+        </p>
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <Field
+            label={zh ? "账户名称" : "Account name"}
+            htmlFor="bank_account_name"
+            className="md:col-span-2"
+          >
+            <TextInput
+              id="bank_account_name"
+              name="bank_account_name"
+              maxLength={200}
+              defaultValue={bank.account_name}
+            />
+          </Field>
+          <Field label={zh ? "开户银行" : "Bank"} htmlFor="bank_name">
+            <TextInput
+              id="bank_name"
+              name="bank_name"
+              maxLength={200}
+              defaultValue={bank.bank_name}
+            />
+          </Field>
+          <Field label="BSB" htmlFor="bank_bsb">
+            <TextInput
+              id="bank_bsb"
+              name="bank_bsb"
+              maxLength={20}
+              inputMode="numeric"
+              defaultValue={bank.bsb}
+            />
+          </Field>
+          <Field label={zh ? "账号" : "Account number"} htmlFor="bank_account_number">
+            <TextInput
+              id="bank_account_number"
+              name="bank_account_number"
+              maxLength={50}
+              inputMode="numeric"
+              defaultValue={bank.account_number}
+            />
+          </Field>
+          <Field
+            label={zh ? "受理卡种" : "Cards accepted"}
+            htmlFor="bank_cards"
+            hint={zh ? "如 VISA / MasterCard；留空则不显示" : "e.g. VISA / MasterCard; empty = not shown"}
+          >
+            <TextInput
+              id="bank_cards"
+              name="bank_cards"
+              maxLength={200}
+              defaultValue={bank.cards}
+            />
+          </Field>
         </div>
       </section>
 

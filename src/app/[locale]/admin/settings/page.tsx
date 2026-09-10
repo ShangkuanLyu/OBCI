@@ -3,12 +3,14 @@ import { redirect } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "@/components/admin/SettingsForm";
+import { formatCouncilLines } from "@/lib/utils/council-lines.mjs";
 import type { Json } from "@/types/database.types";
 
 /* Fixed slot counts; the save action validates exactly these lengths. */
 const CORE_VALUE_SLOTS = 4;
 const ORG_UNIT_SLOTS = 6;
 const GALLERY_SLOTS = 8;
+const OUTLOOK_SLOTS = 3;
 
 type SettingsRecord = Record<string, Json | undefined>;
 
@@ -40,9 +42,13 @@ function strList(record: SettingsRecord, field: string): string[] {
     : [];
 }
 
-function itemList(record: SettingsRecord): SettingsRecord[] {
-  const value = record["items"];
+function recordList(record: SettingsRecord, field: string): SettingsRecord[] {
+  const value = record[field];
   return Array.isArray(value) ? value.map((entry) => asRecord(entry)) : [];
+}
+
+function itemList(record: SettingsRecord): SettingsRecord[] {
+  return recordList(record, "items");
 }
 
 function bilingual(record: SettingsRecord) {
@@ -86,14 +92,18 @@ export default async function AdminSettingsPage({
       "core_values",
       "revenue_note",
       "member_benefits",
+      "objectives",
       "pillars",
+      "outlook",
       "banners",
       "org_structure",
       "strategy_committee",
       "secretariat",
+      "council",
       "gallery",
       "review",
       "legal",
+      "bank",
     ]);
   if (error) throw new Error(`site_settings: ${error.message}`);
 
@@ -102,11 +112,16 @@ export default async function AdminSettingsPage({
   const identity = asRecord(map["identity"]);
   const membership = asRecord(map["membership"]);
   const benefitItems = itemList(asRecord(map["member_benefits"]));
+  const objectiveItems = itemList(asRecord(map["objectives"]));
+  const outlook = asRecord(map["outlook"]);
+  const outlookParagraphs = recordList(outlook, "paragraphs");
+  const councilMembers = recordList(asRecord(map["council"]), "members");
   const bannerItems = itemList(asRecord(map["banners"]));
   const orgItems = itemList(asRecord(map["org_structure"]));
   const galleryItems = itemList(asRecord(map["gallery"]));
   const review = asRecord(map["review"]);
   const legal = asRecord(map["legal"]);
+  const bank = asRecord(map["bank"]);
 
   const zh = locale === "zh";
 
@@ -162,7 +177,18 @@ export default async function AdminSettingsPage({
             zh: benefitItems.map((item) => str(item, "text_zh")).join("\n"),
             en: benefitItems.map((item) => str(item, "text_en")).join("\n"),
           }}
+          objectives={{
+            zh: objectiveItems.map((item) => str(item, "text_zh")).join("\n"),
+            en: objectiveItems.map((item) => str(item, "text_en")).join("\n"),
+          }}
           pillars={titledSlots(itemList(asRecord(map["pillars"])), 4)}
+          outlook={{
+            title_zh: str(outlook, "title_zh"),
+            title_en: str(outlook, "title_en"),
+            paragraphs: Array.from({ length: OUTLOOK_SLOTS }, (_, index) =>
+              bilingual(outlookParagraphs[index] ?? {}),
+            ),
+          }}
           banners={Array.from({ length: 3 }, (_, index) => {
             const item = bannerItems[index] ?? {};
             return {
@@ -191,6 +217,16 @@ export default async function AdminSettingsPage({
           })}
           strategyCommittee={bilingual(asRecord(map["strategy_committee"]))}
           secretariat={bilingual(asRecord(map["secretariat"]))}
+          council={{
+            lines: formatCouncilLines(
+              councilMembers.map((member) => ({
+                name_en: str(member, "name_en"),
+                name_zh: str(member, "name_zh"),
+                note_en: str(member, "note_en"),
+                note_zh: str(member, "note_zh"),
+              })),
+            ),
+          }}
           gallery={Array.from({ length: GALLERY_SLOTS }, (_, index) => {
             const item = galleryItems[index] ?? {};
             return {
@@ -202,6 +238,13 @@ export default async function AdminSettingsPage({
             };
           })}
           confirmedModules={strList(review, "confirmed_modules")}
+          bank={{
+            account_name: str(bank, "account_name"),
+            bank_name: str(bank, "bank_name"),
+            bsb: str(bank, "bsb"),
+            account_number: str(bank, "account_number"),
+            cards: str(bank, "cards"),
+          }}
           legal={{
             constitution_version: str(legal, "constitution_version"),
             terms_version: str(legal, "terms_version"),

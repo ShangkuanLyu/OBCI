@@ -4,7 +4,6 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { ButtonLink } from "@/components/ui/Button";
-import { ReviewNote } from "@/components/ui/ReviewNote";
 import {
   getChapterBySlug,
   getChapters,
@@ -12,10 +11,8 @@ import {
 } from "@/services/organisation";
 import { getNewsByChapter } from "@/services/news";
 import { getEventsByChapter } from "@/services/events";
-import { loc, formatDate, melbourneDay, mediaUrl } from "@/lib/utils/l10n";
+import { loc, formatDate, imageUrl, melbourneDay } from "@/lib/utils/l10n";
 import { cn } from "@/lib/utils/cn";
-import { isPreviewDeployment } from "@/lib/preview";
-import { designFixturesEnabled } from "@/lib/fixtures/design-review";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
@@ -141,15 +138,10 @@ export default async function ChapterPage({
   const certifications = locList(chapter, "certifications", locale);
   const services = locList(chapter, "services", locale);
   const hasSecretariat = Boolean(
-    chapter.secretary_general || chapter.contact_email,
+    chapter.secretary_general ||
+      chapter.deputy_secretary_general ||
+      chapter.contact_email,
   );
-  const copyPending = [
-    paragraphs,
-    resources,
-    experts,
-    certifications,
-    services,
-  ].every((list) => list.length === 0);
   const consultHref = `/contact?topic=${encodeURIComponent(name)}`;
 
   const blocks: Block[] = [];
@@ -191,6 +183,16 @@ export default async function ChapterPage({
                     </p>
                     <p className="mt-1.5 text-body font-medium text-ink">
                       {chapter.secretary_general}
+                    </p>
+                  </div>
+                )}
+                {chapter.deputy_secretary_general && (
+                  <div className="px-6 py-5">
+                    <p className="text-caption font-semibold uppercase tracking-[0.06em] text-sea-800">
+                      {t("deputySecretaryGeneral")}
+                    </p>
+                    <p className="mt-1.5 text-body font-medium text-ink">
+                      {chapter.deputy_secretary_general}
                     </p>
                   </div>
                 )}
@@ -315,14 +317,9 @@ export default async function ChapterPage({
               {tCommon("viewAll")} →
             </Link>
           </div>
-          {/* The fixture build associates real published rows with this
-              chapter for demonstration only; production never does. */}
-          {designFixturesEnabled() && (
-            <ReviewNote className="mt-6">{t("demoAssociationNote")}</ReviewNote>
-          )}
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             {news.map((article) => {
-              const cover = mediaUrl(article.cover_image_path);
+              const cover = imageUrl(article.cover_image_path);
               return (
                 <Link
                   key={article.id}
@@ -365,9 +362,6 @@ export default async function ChapterPage({
       content: (
         <>
           <BlockHeading title={t("eventsTitle")} />
-          {designFixturesEnabled() && (
-            <ReviewNote className="mt-6">{t("demoAssociationNote")}</ReviewNote>
-          )}
           <div className="mt-8 space-y-4">
             {events.map((event) => {
               const location = loc(event, "location", locale);
@@ -459,14 +453,6 @@ export default async function ChapterPage({
           </nav>
         )}
       </section>
-
-      {copyPending && isPreviewDeployment() && (
-        <div className="bg-white">
-          <Container className="pt-10 md:pt-12">
-            <ReviewNote />
-          </Container>
-        </div>
-      )}
 
       {blocks.map((block, i) => (
         <section

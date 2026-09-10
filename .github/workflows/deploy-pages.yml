@@ -55,13 +55,15 @@ jobs:
           rm -rf src/app/api src/app/actions
           rm -rf "src/app/[locale]/admin" "src/app/[locale]/(site)/login"
           rm -rf src/components/admin src/components/forms/LoginForm.tsx
+          # public/news-media (article photographs) and public/portraits
+          # (leadership portraits) are site assets — they must NOT be stripped.
 
       - name: Build static site
         run: npm run build
 
       # Fails the deploy on unresolved template variables ({count} …) in
-      # titles, meta/OG/JSON-LD or visible markup, and on heading/metadata
-      # defects — scripts/check-static-output.mjs.
+      # titles, meta/OG/JSON-LD or visible markup, and on heading/metadata/
+      # robots defects — scripts/check-static-output.mjs.
       - name: Check static output
         run: npm run check:static
 
@@ -75,7 +77,7 @@ jobs:
               <meta charset="utf-8" />
               <meta http-equiv="refresh" content="0; url=/OBCI/zh/" />
               <link rel="canonical" href="https://shangkuanlyu.github.io/OBCI/zh/" />
-              <title>大洋洲工商协会 OBAI</title>
+              <title>大洋洲工商业委员会 OBCI</title>
             </head>
             <body><a href="/OBCI/zh/">进入网站 / Enter site</a></body>
           </html>
@@ -87,7 +89,7 @@ jobs:
             <head>
               <meta charset="utf-8" />
               <meta name="viewport" content="width=device-width, initial-scale=1" />
-              <title>404 | OBAI</title>
+              <title>404 | OBCI</title>
               <style>body{font-family:system-ui,-apple-system,"PingFang SC",sans-serif;background:#fff;color:#1d1d1f;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center}a{color:#11254a}</style>
             </head>
             <body>

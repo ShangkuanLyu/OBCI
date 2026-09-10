@@ -20,12 +20,17 @@ import type { Tables } from "@/types/database.types";
 
 const initialState: ActionState = { status: "idle" };
 
+/* Mirrors GROUP_KEYS in admin/leadership/actions.ts and the public labels
+   in messages leadership.groups.*: the three 2026 groups first, then the
+   legacy keys (still valid for rows not yet regrouped). */
 const GROUPS = [
-  { value: "president", zh: "会长", en: "President" },
-  { value: "honorary_chairman", zh: "名誉主席", en: "Honorary Chairman" },
-  { value: "vice_chair", zh: "副会长", en: "Vice Chair" },
-  { value: "advisor", zh: "顾问", en: "Advisor" },
+  { value: "executive", zh: "执委会", en: "Executive Committee" },
+  { value: "honorary", zh: "荣誉主席与荣誉顾问", en: "Honorary Patrons" },
   { value: "secretariat", zh: "秘书处", en: "Secretariat" },
+  { value: "president", zh: "会长（旧分组）", en: "President (legacy)" },
+  { value: "honorary_chairman", zh: "名誉主席（旧分组）", en: "Honorary Chairman (legacy)" },
+  { value: "vice_chair", zh: "副会长（旧分组）", en: "Vice Chair (legacy)" },
+  { value: "advisor", zh: "顾问（旧分组）", en: "Advisor (legacy)" },
 ];
 
 export function LeadershipForm({
@@ -113,7 +118,7 @@ export function LeadershipForm({
             <Select
               id="group_key"
               name="group_key"
-              defaultValue={item?.group_key ?? "president"}
+              defaultValue={item?.group_key ?? "executive"}
             >
               {GROUPS.map((group) => (
                 <option key={group.value} value={group.value}>

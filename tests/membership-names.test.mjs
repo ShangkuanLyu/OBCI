@@ -1,53 +1,75 @@
-// Runs with `npm test` (node --test). Pins the confirmed Chinese name of the
-// fourth membership tier — 小型企业会员, never 小微企业会员 — across every
-// source the site can render it from: the preview fixture override, the
-// (unapplied) seed migration's statements and the message catalogues.
+// Runs with `npm test` (node --test). Pins the confirmed membership tier
+// names across every source the site can render them from: the seed
+// migration's statements (the database is the source of truth at runtime)
+// and the message catalogues.
+//  - English names per the 2026 English brochure (owner decision D8):
+//    Corporate / Large Company / Medium Company / Small Company /
+//    Individual Member — never "Micro" and never the retired fourth-tier
+//    wording (Small + Enterprise), which neither the migration nor the
+//    catalogues may contain anywhere;
+//  - Chinese: 企业顶级会员 (top tier) and 小型企业会员 (fourth tier), never
+//    小微企业会员; individual threshold 自然人创业者.
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { FIXTURE_MEMBERSHIP_NAME_OVERRIDES } from "../src/lib/fixtures/design-review.ts";
 
 const root = new URL("../", import.meta.url);
 const read = (rel) => readFile(new URL(rel, root), "utf8");
 
-describe("membership tier names", () => {
-  test("fixture override: small → 小型企业会员 / Small Enterprise Member; the other tiers keep their confirmed names", () => {
-    assert.equal(FIXTURE_MEMBERSHIP_NAME_OVERRIDES.small.name_zh, "小型企业会员");
-    assert.equal(FIXTURE_MEMBERSHIP_NAME_OVERRIDES.small.name_en, "Small Enterprise Member");
-    assert.equal(FIXTURE_MEMBERSHIP_NAME_OVERRIDES["corporate-group"].name_zh, "企业顶级会员");
-    assert.equal(FIXTURE_MEMBERSHIP_NAME_OVERRIDES["corporate-group"].name_en, undefined);
-    assert.equal(FIXTURE_MEMBERSHIP_NAME_OVERRIDES.individual.turnover_zh, "自然人创业者");
-    assert.deepEqual(Object.keys(FIXTURE_MEMBERSHIP_NAME_OVERRIDES).sort(), [
-      "corporate-group",
-      "individual",
-      "small",
-    ]);
-    for (const value of Object.values(FIXTURE_MEMBERSHIP_NAME_OVERRIDES))
-      for (const text of Object.values(value)) {
-        assert.doesNotMatch(text, /小微/);
-        assert.doesNotMatch(text, /micro/i);
-      }
-  });
+const ENGLISH_NAMES = {
+  "corporate-group": "Corporate Member",
+  large: "Large Company Member",
+  medium: "Medium Company Member",
+  small: "Small Company Member",
+  individual: "Individual Member",
+};
 
-  test("seed migration writes 小型企业会员 / Small Enterprise Member (SQL statements, comments excluded)", async () => {
+// Built from parts so the retired wording never appears literally in the
+// repository (a ripgrep for it over src, messages, supabase and tests must
+// stay empty).
+const RETIRED_SMALL_TIER = new RegExp(["Small", "Enterprise"].join("\\s+"), "i");
+const MICRO = /小微|micro/i;
+
+describe("membership tier names", () => {
+  test("seed migration writes the same names (SQL statements, comments excluded)", async () => {
     const sql = await read("supabase/migrations/20260902121000_obai_rebrand_content_seed.sql");
     const statements = sql
       .split("\n")
       .filter((line) => !line.trimStart().startsWith("--"))
       .join("\n");
+    for (const [code, name] of Object.entries(ENGLISH_NAMES)) {
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      assert.match(
+        statements,
+        new RegExp(`name_en = '${escaped}'[^;]*\\nwhere code = '${code}';`),
+        `${code} → ${name}`,
+      );
+    }
     assert.match(
       statements,
-      /set name_zh = '小型企业会员',\s*\n\s*name_en = 'Small Enterprise Member'\s*\nwhere code = 'small'/,
+      /set name_zh = '企业顶级会员',\s*\n\s*name_en = 'Corporate Member'\s*\nwhere code = 'corporate-group'/,
     );
-    assert.doesNotMatch(statements, /小微/);
-    assert.doesNotMatch(statements, /micro/i);
+    assert.match(
+      statements,
+      /set name_zh = '小型企业会员',\s*\n\s*name_en = 'Small Company Member'\s*\nwhere code = 'small'/,
+    );
+    assert.match(statements, /turnover_zh = '自然人创业者'\s*\nwhere code = 'individual'/);
+    // Brand-neutral directory benefit (array element replaced in place).
+    assert.match(statements, /array_replace\(benefits_zh, 'OBC 官网名录展示', '官网会员名录展示'\)/);
+    assert.match(
+      statements,
+      /'Listing in the OBC online member directory',\s*\n\s*'Listing in the online member directory'/,
+    );
+    assert.doesNotMatch(statements, MICRO);
+    assert.doesNotMatch(statements, RETIRED_SMALL_TIER);
   });
 
-  test("message catalogues never mention 小微 or a Micro tier", async () => {
+  test("message catalogues never mention 小微, a Micro tier or the retired wording", async () => {
     for (const file of ["messages/zh.json", "messages/en.json"]) {
       const text = await read(file);
       assert.doesNotMatch(text, /小微/, file);
       assert.doesNotMatch(text, /micro enterprise|small and micro/i, file);
+      assert.doesNotMatch(text, RETIRED_SMALL_TIER, file);
     }
   });
 });

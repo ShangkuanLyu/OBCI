@@ -4,12 +4,10 @@ import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
-import { ReviewNote } from "@/components/ui/ReviewNote";
 import { OrgChart } from "@/components/about/OrgChart";
 import { Gallery, resolveGalleryItems } from "@/components/about/Gallery";
 import { getChapters, getLeadership } from "@/services/organisation";
 import { getContentBlocks } from "@/services/content";
-import { isPreviewDeployment } from "@/lib/preview";
 import { loc } from "@/lib/utils/l10n";
 import { countWord } from "@/lib/utils/count-word";
 import { pageMetadata } from "@/lib/seo";
@@ -18,9 +16,9 @@ import type { Metadata } from "next";
 
 export const revalidate = 300;
 
-/** Office-holders shown in the leadership teaser (advisers are on the
- *  leadership page and the homepage honours band). */
-const OFFICE_GROUPS = new Set(["president", "honorary_chairman", "vice_chair"]);
+/** Office-holders shown in the leadership teaser: the Executive Committee
+ *  (honorary patrons are on the leadership page and the homepage band). */
+const TEASER_GROUP = "executive";
 
 export async function generateMetadata({
   params,
@@ -44,17 +42,6 @@ function paragraphs(text: string): string[] {
     .filter(Boolean);
 }
 
-/** Preview-only placeholder band for a CMS module without chamber copy. */
-function PendingModule({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="bg-white py-6">
-      <Container>
-        <ReviewNote>{children}</ReviewNote>
-      </Container>
-    </section>
-  );
-}
-
 export default async function AboutPage({
   params,
 }: {
@@ -65,7 +52,6 @@ export default async function AboutPage({
   const locale = rawLocale as Locale;
   const t = await getTranslations("about");
   const zh = locale === "zh";
-  const preview = isPreviewDeployment();
 
   const [leadership, content, chapters] = await Promise.all([
     getLeadership().catch(() => []),
@@ -75,13 +61,15 @@ export default async function AboutPage({
   const gallery = await resolveGalleryItems(content?.gallery ?? [], locale);
 
   const leaders = leadership
-    .filter((person) => OFFICE_GROUPS.has(person.group_key))
+    .filter((person) => person.group_key === TEASER_GROUP)
     .slice(0, 4);
   const pick = (row: { text_zh: string; text_en: string }) =>
     zh ? row.text_zh || row.text_en : row.text_en || row.text_zh;
   const units = content?.orgStructure ?? [];
   const coreValues = content?.coreValues ?? [];
+  const objectives = content?.objectives ?? [];
   const pillars = content?.pillars ?? [];
+  const outlook = content?.outlook ?? null;
 
   return (
     <>
@@ -100,6 +88,9 @@ export default async function AboutPage({
               </p>
               <p className="mt-6 max-w-[42rem] text-body leading-relaxed text-grey-600">
                 {t("introBody2")}
+              </p>
+              <p className="mt-6 max-w-[42rem] text-body leading-relaxed text-grey-600">
+                {t("introBody3")}
               </p>
             </div>
           </div>
@@ -122,7 +113,7 @@ export default async function AboutPage({
       )}
 
       {/* 3 · Mission — chamber copy only, never a fallback */}
-      {content?.mission ? (
+      {content?.mission && (
         <section className="bg-white py-16 md:py-24">
           <Container>
             <SectionHeading title={t("missionTitle")} />
@@ -135,17 +126,38 @@ export default async function AboutPage({
             </div>
           </Container>
         </section>
-      ) : (
-        preview && (
-          <PendingModule>
-            {t("reviewCmsPending", { module: t("missionTitle") })}
-          </PendingModule>
-        )
       )}
 
-      {/* 4 · Core values */}
-      {coreValues.length > 0 ? (
+      {/* 4 · Main objectives (brochure) — numbered list */}
+      {objectives.length > 0 && (
         <section className="bg-grey-50 py-16 md:py-24">
+          <Container>
+            <SectionHeading
+              label={t("objectivesLabel")}
+              title={t("objectivesTitle")}
+            />
+            <ol className="mt-10 grid gap-x-14 gap-y-2 md:grid-cols-2">
+              {objectives.map((objective, i) => (
+                <li
+                  key={i}
+                  className="grid grid-cols-[3rem_1fr] gap-4 border-t border-grey-100 py-5"
+                >
+                  <span className="text-h3 font-semibold tabular-nums text-grey-300">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <p className="text-body leading-relaxed text-ink">
+                    {pick(objective)}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </Container>
+        </section>
+      )}
+
+      {/* 5 · Core values */}
+      {coreValues.length > 0 && (
+        <section className="bg-white py-16 md:py-24">
           <Container>
             <SectionHeading label={t("valuesLabel")} title={t("valuesTitle")} />
             <ul className="mt-10 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
@@ -169,17 +181,11 @@ export default async function AboutPage({
             </ul>
           </Container>
         </section>
-      ) : (
-        preview && (
-          <PendingModule>
-            {t("reviewCmsPending", { module: t("valuesTitle") })}
-          </PendingModule>
-        )
       )}
 
-      {/* 5 · Four practice pillars — full editorial version */}
+      {/* 6 · Four practice pillars — full editorial version */}
       {pillars.length > 0 && (
-        <section className="bg-white py-16 md:py-24">
+        <section className="bg-grey-50 py-16 md:py-24">
           <Container>
             <SectionHeading
               label={t("pillarsLabel")}
@@ -210,7 +216,30 @@ export default async function AboutPage({
         </section>
       )}
 
-      {/* 6 · Leadership and honorary advisers — office-holder teaser */}
+      {/* 7 · Annual review and outlook (brochure) */}
+      {outlook && (
+        <section className="bg-white py-16 md:py-24">
+          <Container>
+            <SectionHeading label={t("outlookLabel")} title={t("outlookTitle")} />
+            <div className="mt-8 max-w-[46rem]">
+              {loc(outlook, "title", locale) && (
+                <h3 className="text-h4 font-semibold text-ink">
+                  {loc(outlook, "title", locale)}
+                </h3>
+              )}
+              <div className="mt-5 space-y-5">
+                {outlook.paragraphs.map((paragraph, i) => (
+                  <p key={i} className="text-body leading-relaxed text-grey-600">
+                    {pick(paragraph)}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </Container>
+        </section>
+      )}
+
+      {/* 8 · Executive Committee — office-holder teaser */}
       {leaders.length > 0 && (
         <section className="bg-grey-50 py-16 md:py-24">
           <Container>
@@ -245,7 +274,7 @@ export default async function AboutPage({
         </section>
       )}
 
-      {/* 7 · Organisational structure chart */}
+      {/* 9 · Organisational structure chart */}
       {units.length > 0 && (
         <section className="bg-white py-16 md:py-24">
           <Container>
@@ -273,8 +302,9 @@ export default async function AboutPage({
         </section>
       )}
 
-      {/* 8 · China Enterprise Going-Global Strategy Committee */}
-      {content?.strategyCommittee ? (
+      {/* 10 · Strategy committee — optional CMS key; the 2026 material has no
+             such unit, so the section simply stays hidden while empty. */}
+      {content?.strategyCommittee && (
         <section className="bg-sea-50 py-16 md:py-24">
           <Container>
             <SectionHeading
@@ -292,15 +322,9 @@ export default async function AboutPage({
             </div>
           </Container>
         </section>
-      ) : (
-        preview && (
-          <PendingModule>
-            {t("reviewCmsPending", { module: t("strategyCommitteeTitle") })}
-          </PendingModule>
-        )
       )}
 
-      {/* 9 · Industry chapters — compact strip (count from published rows) */}
+      {/* 11 · Professional committees — compact strip (count from published rows) */}
       {chapters.length > 0 && (
         <section className="bg-grey-50 py-16 md:py-24">
           <Container>
@@ -332,8 +356,8 @@ export default async function AboutPage({
         </section>
       )}
 
-      {/* 10 · Professional secretariat */}
-      {content?.secretariat ? (
+      {/* 12 · Secretariat (names from site_settings.secretariat) */}
+      {content?.secretariat && (
         <section className="bg-white py-16 md:py-24">
           <Container>
             <SectionHeading
@@ -349,15 +373,9 @@ export default async function AboutPage({
             </div>
           </Container>
         </section>
-      ) : (
-        preview && (
-          <PendingModule>
-            {t("reviewCmsPending", { module: t("secretariatTitle") })}
-          </PendingModule>
-        )
       )}
 
-      {/* 11 · Credentials and government-business activity gallery */}
+      {/* 13 · Credentials and government-business activity gallery */}
       {gallery.length > 0 && (
         <section className="bg-grey-50 py-16 md:py-24">
           <Container>

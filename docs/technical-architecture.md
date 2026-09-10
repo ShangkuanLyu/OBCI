@@ -1,8 +1,8 @@
 # Technical Architecture — OBCI Website
 
-- **Stack:** Next.js 15 (App Router, RSC) · TypeScript · Tailwind CSS v4 · Supabase (Postgres, Auth, Storage) · next-intl · Stripe
+- **Stack:** Next.js 16.3 (App Router, RSC) · TypeScript · Tailwind CSS v4 · Supabase (Postgres, Auth, Storage) · next-intl · Stripe
 - **Supabase project:** `gmglssmdrsackqgkqdbu` → `https://gmglssmdrsackqgkqdbu.supabase.co`
-- **Hosting target:** Vercel (or any Node host); no Supabase Edge Functions required initially.
+- **Hosting:** the public site is a static export deployed to **GitHub Pages** (`https://shangkuanlyu.github.io/OBCI`, base path `/OBCI`) by `.github/workflows/deploy-pages.yml`. The admin CMS, auth and the Stripe webhook cannot be exported and need a Node host (e.g. Vercel) — the workflow strips them from the Pages build. No Supabase Edge Functions.
 
 ---
 
@@ -12,7 +12,10 @@
 /                       ← Next.js app at repo root
 ├── docs/               ← project documentation (audits, IA, this file)
 ├── messages/           ← next-intl message catalogues: zh.json, en.json
-├── public/             ← static assets (logo, favicons, local placeholder imagery)
+├── content/news/       ← launch seed for the 2026-09 article set (Markdown → migration)
+├── public/             ← static assets: brand (logo, favicons, OG), article
+│                          photographs (news-media/<slug>/), leadership portraits
+├── scripts/            ← build-static.sh, check-static-output.mjs, pages-preview-server.mjs, content/
 ├── supabase/
 │   └── migrations/     ← SQL mirror of every migration applied via MCP (source of truth = DB history)
 └── src/
@@ -36,7 +39,8 @@
     ├── services/               ← ALL database access lives here (news.ts, events.ts, membership.ts…)
     ├── types/
     │   └── database.types.ts   ← generated from live Supabase schema
-    └── middleware.ts           ← next-intl locale negotiation + admin session refresh
+    └── proxy.ts                ← Next.js 16 request proxy (formerly middleware.ts):
+                                   next-intl locale negotiation + admin session refresh
 ```
 
 **Rule: UI never calls `supabase.from(...)` directly.** Components consume typed functions from `src/services/*`; those functions receive/construct the appropriate client. This is the Service Layer required by the brief.
@@ -64,7 +68,7 @@ Admin mutations call `revalidateTag(domain)` so public pages refresh immediately
 ## 4. Supabase clients & auth
 
 - `client.ts` — `createBrowserClient` (publishable key). Used only where interactivity requires it (auth UI, admin file upload progress).
-- `server.ts` — `createServerClient` bound to Next.js cookies; used by RSC + server actions. Session refresh handled in `middleware.ts`.
+- `server.ts` — `createServerClient` bound to Next.js cookies; used by RSC + server actions. Session refresh handled in `src/proxy.ts`.
 - `admin.ts` — service-role key, `import "server-only"`, used exclusively by trusted server code (webhook, admin operations that must bypass RLS such as reading all applications). Every use site performs an explicit app-role check first.
 
 ### Roles
@@ -89,6 +93,8 @@ Enforcement is three-layered, per the brief:
 | `media` | public | news/event/leadership/partner/site imagery | images only (`image/*`), 10 MB cap, image transformation for responsive sizes |
 | `member-documents` | private | membership application documents | pdf/doc/images, 20 MB cap, access via signed URLs created server-side; upload path `applications/{application_id}/…` guarded by storage RLS |
 
+Seeded imagery is **not** in Storage: the launch article photographs (`public/news-media/<slug>/`) and leadership portraits (`public/portraits/<slug>.jpg`) ship with the repository and are stored in the database as leading-slash paths. `imageUrl()` (`src/lib/utils/l10n.ts`) resolves a leading-slash path as a site asset (base path applied) and any other path as a `media` bucket object, so CMS uploads and repository assets coexist.
+
 ## 6. Stripe (Phase 10)
 
 - Server creates a Checkout Session (`mode: payment`) for the selected membership type; client is redirected — card data never touches our code.
@@ -110,16 +116,13 @@ NEXT_PUBLIC_SITE_URL=…                 # absolute origin incl. base path; cano
 
 ### Build flags per deployment
 
-| Flag | Node / Vercel | GitHub Pages CI (production) | Chamber-review preview |
-| --- | --- | --- | --- |
-| `STATIC_EXPORT=1` — `output: "export"`, trailing slashes, `basePath` applied; server-only parts stripped by the workflow | unset | `1` | `1` |
-| `NEXT_PUBLIC_BASE_PATH` — sub-path of the static export (e.g. `/OBCI`); honoured only when `STATIC_EXPORT=1` | unset | `/OBCI` | set to the preview repo path |
-| `NEXT_PUBLIC_SITE_URL` — absolute origin incl. base path | deployment origin | `https://<owner>.github.io/OBCI` | preview origin |
-| `NEXT_PUBLIC_PREVIEW_DEPLOYMENT=1` — noindex + `robots` disallow all + empty sitemap, review banner and module review notes, unconfirmed content hidden (`src/lib/preview.ts`, `src/lib/review.ts`) | unset | unset | `1` |
-| `NEXT_PUBLIC_DESIGN_FIXTURES=1` — flag-gated design-review fixtures for rows whose migration is not applied (`src/lib/fixtures/`) | unset | unset | `1` |
-| `NEXT_PUBLIC_INTERNAL_REVIEW=1` — local internal review only: unconfirmed contact details render with a "pending chamber confirmation" marker (`contactFieldState` in `src/lib/review.ts`) | unset | unset | unset (only `scripts/build-static-preview.sh PREVIEW=1` sets it) |
+| Flag | Node host (dev / CMS) | GitHub Pages CI (production) |
+| --- | --- | --- |
+| `STATIC_EXPORT=1` — `output: "export"`, trailing slashes, `basePath` applied; server-only parts stripped by the workflow | unset | `1` |
+| `NEXT_PUBLIC_BASE_PATH` — sub-path of the static export (e.g. `/OBCI`); honoured only when `STATIC_EXPORT=1` | unset | `/OBCI` |
+| `NEXT_PUBLIC_SITE_URL` — absolute origin incl. base path (canonical/hreflang/OG/sitemap) | deployment origin | `https://shangkuanlyu.github.io/OBCI` |
 
-Either review flag disables every public write path at the HTML level (`submissionsDisabled()`), so a build showing provisional content can never accept real submissions. Production leaves both unset.
+There are no review or fixture flags: the site is live and the database is the single source of truth. `scripts/build-static.sh` reproduces the CI build locally (same strip step, same env, same static-output check) and stages the result for `scripts/pages-preview-server.mjs`.
 
 ## 8. Types
 

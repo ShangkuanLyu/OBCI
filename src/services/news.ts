@@ -1,9 +1,5 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import type { Tables } from "@/types/database.types";
-import {
-  designFixturesEnabled,
-  FIXTURE_CHAPTER_NEWS_SLUGS,
-} from "@/lib/fixtures/design-review";
 
 export type NewsRow = Tables<"news">;
 export type NewsCategoryRow = Tables<"news_categories">;
@@ -24,47 +20,42 @@ export async function getNewsCategories(): Promise<NewsCategoryRow[]> {
   return data;
 }
 
+function byDateDesc(
+  a: { published_at: string | null },
+  b: { published_at: string | null },
+) {
+  if (a.published_at === b.published_at) return 0;
+  if (a.published_at === null) return 1;
+  if (b.published_at === null) return -1;
+  return a.published_at < b.published_at ? 1 : -1;
+}
+
 /** Published articles, newest first. Category/tag/search filtering happens
  *  client-side over this corpus (lib/news/filter), not in the query. */
 export async function getPublishedNews(options?: {
   limit?: number;
 }): Promise<NewsWithCategory[]> {
   const supabase = createPublicClient();
-  let query = supabase
+  const { data, error } = await supabase
     .from("news")
     .select(LIST_COLUMNS)
     .eq("status", "published")
     .order("published_at", { ascending: false });
-  if (options?.limit) query = query.limit(options.limit);
-  const { data, error } = await query;
   if (error) throw new Error(`getPublishedNews: ${error.message}`);
-  return data as unknown as NewsWithCategory[];
+  const rows = data as unknown as NewsWithCategory[];
+  return options?.limit ? rows.slice(0, options.limit) : rows;
 }
 
 /**
- * News associated with an industry chapter. Association is by tag
- * (`tags` contains the chapter slug) so one article can belong to
- * several industries. The design-review preview uses a fixed mapping
- * of real published articles until the approved data update tags them.
+ * News associated with an industry committee. Association is by tag
+ * (`tags` contains the committee slug) so one article can belong to
+ * several committees.
  */
 export async function getNewsByChapter(
   chapterSlug: string,
   limit = 3,
 ): Promise<NewsWithCategory[]> {
   const supabase = createPublicClient();
-  if (designFixturesEnabled()) {
-    const slugs = FIXTURE_CHAPTER_NEWS_SLUGS[chapterSlug] ?? [];
-    if (slugs.length === 0) return [];
-    const { data, error } = await supabase
-      .from("news")
-      .select(LIST_COLUMNS)
-      .eq("status", "published")
-      .in("slug", slugs)
-      .order("published_at", { ascending: false })
-      .limit(limit);
-    if (error) throw new Error(`getNewsByChapter: ${error.message}`);
-    return data as unknown as NewsWithCategory[];
-  }
   const { data, error } = await supabase
     .from("news")
     .select(LIST_COLUMNS)
@@ -77,16 +68,13 @@ export async function getNewsByChapter(
 }
 
 export async function getFeaturedNews(limit = 3): Promise<NewsWithCategory[]> {
-  const supabase = createPublicClient();
-  const { data, error } = await supabase
-    .from("news")
-    .select(LIST_COLUMNS)
-    .eq("status", "published")
-    .order("is_featured", { ascending: false })
-    .order("published_at", { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(`getFeaturedNews: ${error.message}`);
-  return data as unknown as NewsWithCategory[];
+  const all = await getPublishedNews();
+  return all
+    .slice()
+    .sort(
+      (a, b) => Number(b.is_featured) - Number(a.is_featured) || byDateDesc(a, b),
+    )
+    .slice(0, limit);
 }
 
 export async function getNewsBySlug(
@@ -100,7 +88,7 @@ export async function getNewsBySlug(
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw new Error(`getNewsBySlug: ${error.message}`);
-  return data as unknown as NewsWithCategory | null;
+  return data ? (data as unknown as NewsWithCategory) : null;
 }
 
 export async function getAllNewsSlugs(): Promise<string[]> {
@@ -110,5 +98,5 @@ export async function getAllNewsSlugs(): Promise<string[]> {
     .select("slug")
     .eq("status", "published");
   if (error) throw new Error(`getAllNewsSlugs: ${error.message}`);
-  return data.map((r) => r.slug);
+  return [...new Set(data.map((r) => r.slug))];
 }

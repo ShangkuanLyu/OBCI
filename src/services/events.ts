@@ -1,11 +1,15 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import type { Tables } from "@/types/database.types";
-import {
-  designFixturesEnabled,
-  FIXTURE_CHAPTER_EVENT_SLUGS,
-} from "@/lib/fixtures/design-review";
+import type { EventExtras } from "@/lib/content/types";
 
 export type EventRow = Tables<"events">;
+
+/**
+ * An event row plus the `tags` column added by migration 20260902120000
+ * (committee association). The service pads it so consumers can read
+ * `tags` while the generated database types still lack the column.
+ */
+export type EventWithTags = EventRow & Required<EventExtras>;
 
 /** Whether an event is still in the future. Evaluated at build time on the
  *  static export (the daily rebuild refreshes it). */
@@ -13,7 +17,15 @@ export function eventIsUpcoming(event: EventRow): boolean {
   return new Date(event.starts_at).getTime() > Date.now();
 }
 
-export async function getUpcomingEvents(): Promise<EventRow[]> {
+function normaliseEvent(row: EventRow & EventExtras): EventWithTags {
+  return { ...row, tags: row.tags ?? [] };
+}
+
+function byStartDesc(a: EventRow, b: EventRow): number {
+  return new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime();
+}
+
+export async function getUpcomingEvents(): Promise<EventWithTags[]> {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("events")
@@ -22,10 +34,10 @@ export async function getUpcomingEvents(): Promise<EventRow[]> {
     .gte("starts_at", new Date().toISOString())
     .order("starts_at", { ascending: true });
   if (error) throw new Error(`getUpcomingEvents: ${error.message}`);
-  return data;
+  return data.map(normaliseEvent);
 }
 
-export async function getPastEvents(limit = 24): Promise<EventRow[]> {
+export async function getPastEvents(limit = 24): Promise<EventWithTags[]> {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("events")
@@ -35,10 +47,12 @@ export async function getPastEvents(limit = 24): Promise<EventRow[]> {
     .order("starts_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(`getPastEvents: ${error.message}`);
-  return data;
+  return data.map(normaliseEvent).sort(byStartDesc).slice(0, limit);
 }
 
-export async function getEventBySlug(slug: string): Promise<EventRow | null> {
+export async function getEventBySlug(
+  slug: string,
+): Promise<EventWithTags | null> {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("events")
@@ -47,7 +61,7 @@ export async function getEventBySlug(slug: string): Promise<EventRow | null> {
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw new Error(`getEventBySlug: ${error.message}`);
-  return data;
+  return data ? normaliseEvent(data) : null;
 }
 
 /** Logged at most once per process so a missing `events.tags` column is
@@ -55,29 +69,15 @@ export async function getEventBySlug(slug: string): Promise<EventRow | null> {
 let warnedChapterQuery = false;
 
 /**
- * Events associated with an industry chapter. In production the link is a
- * chapter-slug entry in `events.tags` (added by the pending migration);
- * until that column exists the query fails soft and the section hides.
- * The design-review preview uses a fixed mapping of real events.
+ * Events associated with an industry committee. The link is a
+ * committee-slug entry in `events.tags`. If the column is missing the
+ * query fails soft and the section hides rather than breaking the build.
  */
 export async function getEventsByChapter(
   chapterSlug: string,
   limit = 3,
-): Promise<EventRow[]> {
+): Promise<EventWithTags[]> {
   const supabase = createPublicClient();
-  if (designFixturesEnabled()) {
-    const slugs = FIXTURE_CHAPTER_EVENT_SLUGS[chapterSlug] ?? [];
-    if (slugs.length === 0) return [];
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .eq("status", "published")
-      .in("slug", slugs)
-      .order("starts_at", { ascending: false })
-      .limit(limit);
-    if (error) throw new Error(`getEventsByChapter: ${error.message}`);
-    return data;
-  }
   const { data, error } = await supabase
     .from("events")
     .select("*")
@@ -85,7 +85,7 @@ export async function getEventsByChapter(
     .contains("tags", [chapterSlug])
     .order("starts_at", { ascending: false })
     .limit(limit);
-  // Fails soft while the tags column migration is still pending.
+  // Fails soft if the tags column is unavailable.
   if (error) {
     if (!warnedChapterQuery) {
       warnedChapterQuery = true;
@@ -95,7 +95,7 @@ export async function getEventsByChapter(
     }
     return [];
   }
-  return data;
+  return data.map(normaliseEvent);
 }
 
 export async function getAllEventSlugs(): Promise<string[]> {
@@ -105,5 +105,5 @@ export async function getAllEventSlugs(): Promise<string[]> {
     .select("slug")
     .eq("status", "published");
   if (error) throw new Error(`getAllEventSlugs: ${error.message}`);
-  return data.map((r) => r.slug);
+  return [...new Set(data.map((r) => r.slug))];
 }

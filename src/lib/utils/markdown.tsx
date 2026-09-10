@@ -1,56 +1,79 @@
 import type { ReactNode } from "react";
+import { imageUrl } from "./l10n";
+import {
+  parseInline,
+  parseMarkdown,
+  type MarkdownBlock,
+} from "./markdown-parse.mjs";
 
 /**
- * Minimal markdown renderer for CMS article bodies (paragraphs, ## / ###
- * headings, - lists, **bold**). Content comes from our own CMS; no raw HTML
- * is ever injected.
+ * Minimal markdown renderer for CMS article bodies: paragraphs, ## / ###
+ * headings, - lists, **bold** and standalone `![caption](src)` images
+ * (parsing lives in markdown-parse.mjs). Content comes from our own CMS;
+ * no raw HTML is ever injected — an image line whose source is not an
+ * allowed storage or local path is rendered as plain text.
  */
 export function renderMarkdown(source: string): ReactNode[] {
-  const blocks = source.replaceAll("\r\n", "\n").split(/\n{2,}/);
-  return blocks
-    .map((block) => block.trim())
-    .filter(Boolean)
-    .map((block, i) => {
-      if (block.startsWith("### ")) {
-        return (
+  return parseMarkdown(source).map((block: MarkdownBlock, i: number) => {
+    switch (block.type) {
+      case "heading":
+        return block.level === 3 ? (
           <h3 key={i} className="mt-10 text-h4 font-semibold text-ink">
-            {renderInline(block.slice(4))}
+            {renderInline(block.text)}
           </h3>
-        );
-      }
-      if (block.startsWith("## ")) {
-        return (
+        ) : (
           <h2 key={i} className="mt-12 text-h3 font-semibold tracking-[-0.01em] text-ink">
-            {renderInline(block.slice(3))}
+            {renderInline(block.text)}
           </h2>
         );
-      }
-      const lines = block.split("\n");
-      if (lines.every((l) => l.trim().startsWith("- "))) {
+      case "list":
         return (
           <ul key={i} className="mt-6 list-disc space-y-2 pl-6 text-body leading-relaxed text-grey-600">
-            {lines.map((l, j) => (
-              <li key={j}>{renderInline(l.trim().slice(2))}</li>
+            {block.items.map((item, j) => (
+              <li key={j}>{renderInline(item)}</li>
             ))}
           </ul>
         );
+      case "image": {
+        // A leading "/" is a local public asset (basePath applied); anything
+        // else is an object in the public media bucket.
+        const src = imageUrl(block.src) ?? block.src;
+        return (
+          <figure key={i} className="mt-6 first:mt-0">
+            {/* eslint-disable-next-line @next/next/no-img-element -- body images have arbitrary aspect ratios and the static export is unoptimized anyway */}
+            <img
+              src={src}
+              alt={block.caption}
+              loading="lazy"
+              decoding="async"
+              className="block h-auto w-full rounded-[4px] bg-sea-50"
+            />
+            {block.caption !== "" && (
+              <figcaption className="mt-2 text-small leading-normal text-grey-500">
+                {block.caption}
+              </figcaption>
+            )}
+          </figure>
+        );
       }
-      return (
-        <p key={i} className="mt-6 text-body leading-relaxed text-grey-600 first:mt-0">
-          {renderInline(block.replaceAll("\n", " "))}
-        </p>
-      );
-    });
+      default:
+        return (
+          <p key={i} className="mt-6 text-body leading-relaxed text-grey-600 first:mt-0">
+            {renderInline(block.text)}
+          </p>
+        );
+    }
+  });
 }
 
 function renderInline(text: string): ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-    part.startsWith("**") && part.endsWith("**") ? (
+  return parseInline(text).map((node, i) =>
+    node.type === "strong" ? (
       <strong key={i} className="font-semibold text-ink">
-        {part.slice(2, -2)}
+        {node.text}
       </strong>
     ) : (
-      part
+      node.text
     ),
   );
 }

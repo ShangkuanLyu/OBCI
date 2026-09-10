@@ -3,7 +3,6 @@ import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { getSiteSettings } from "@/services/settings";
 import { legalDocumentVersion } from "@/lib/review";
-import { isPreviewDeployment } from "@/lib/preview";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
@@ -28,8 +27,8 @@ export async function generateMetadata({
       title: t("privacyTitle"),
       description:
         locale === "zh"
-          ? "大洋洲工商协会如何收集、使用与保护您的个人信息。"
-          : "How the Oceania Business Association collects, uses and protects your personal information.",
+          ? "大洋洲工商业委员会（OBCI）如何收集、使用与保护您的个人信息。"
+          : "How the Oceania Business Council collects, uses and protects your personal information.",
     }),
     // An unpublished placeholder must never be indexed.
     ...(approved ? {} : { robots: { index: false, follow: false } }),
@@ -153,12 +152,10 @@ export default async function PrivacyPage({
     getSiteSettings().catch(() => ({})),
   ]);
 
-  // The text is published only once the chamber records a version
-  // (site_settings.legal.privacy_version). Until then the draft body is
-  // visible solely in the review deployment; production shows the
-  // unpublished notice and nothing else.
+  // The text is published only where site_settings.legal records a
+  // version stamp; without one the page shows the notice and no body.
   const version = legalDocumentVersion(settings, "privacy");
-  const showBody = version !== null || isPreviewDeployment();
+  const showBody = version !== null;
   const sections = locale === "zh" ? sectionsZh : sectionsEn;
 
   return (
@@ -175,18 +172,6 @@ export default async function PrivacyPage({
                 </span>{" "}
                 {version}
               </p>
-            ) : showBody ? (
-              <div
-                role="note"
-                className="rounded-md border border-dashed border-grey-300 bg-grey-50 px-5 py-4"
-              >
-                <span className="inline-block rounded-full border border-sea-200 bg-white px-3 py-1 text-caption font-semibold tracking-[0.04em] text-sea-800">
-                  {t("draftBadge")}
-                </span>
-                <p className="mt-3 text-small leading-relaxed text-grey-600">
-                  {t("draftNotice")}
-                </p>
-              </div>
             ) : (
               <p className="text-body leading-relaxed text-grey-600">
                 {t("unpublishedNotice")}

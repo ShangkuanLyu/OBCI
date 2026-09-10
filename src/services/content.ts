@@ -1,38 +1,39 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import type { Json } from "@/types/database.types";
-import {
-  designFixturesEnabled,
-  FIXTURE_BANNERS,
-  FIXTURE_GALLERY,
-  FIXTURE_MEMBER_BENEFITS,
-  FIXTURE_ORG_STRUCTURE,
-  FIXTURE_PILLARS,
-  FIXTURE_REVENUE_NOTE,
-  FIXTURE_VISION,
-  type BannerData,
-  type GalleryItem,
-  type OrgUnit,
-} from "@/lib/fixtures/design-review";
+import type {
+  BannerData,
+  CouncilRoster,
+  GalleryItem,
+  OrgUnit,
+  OutlookData,
+} from "@/lib/content/types";
 
 export type BilingualText = { text_zh: string; text_en: string };
 export type Pillar = BilingualText & { title_zh: string; title_en: string };
 export type ValueItem = Pillar;
+export type { CouncilMember, CouncilRoster, OutlookData } from "@/lib/content/types";
 
 export type ContentBlocks = {
   vision: BilingualText | null;
-  /** Chamber-supplied mission; null until confirmed (never invented). */
+  /** Council mission; null when the key is unset (never invented). */
   mission: BilingualText | null;
-  /** Chamber-supplied core values; empty until confirmed. */
+  /** Council core values; empty when the key is unset. */
   coreValues: ValueItem[];
+  /** Brochure "Main objectives"; empty when the key is unset. */
+  objectives: BilingualText[];
   pillars: Pillar[];
   memberBenefits: BilingualText[];
   revenueNote: BilingualText | null;
   banners: BannerData[];
-  /** Organisational units for the structure chart (DOCX-named units only). */
+  /** Organisational units for the structure chart (names only). */
   orgStructure: OrgUnit[];
-  /** 中国企业出海战略委员会 description; null until supplied. */
+  /** Council roster (执委会议员); null when the key is unset. */
+  council: CouncilRoster | null;
+  /** Annual review / outlook (brochure); null when the key is unset. */
+  outlook: OutlookData | null;
+  /** 中国企业出海战略委员会 description; null when the key is unset. */
   strategyCommittee: BilingualText | null;
-  /** 专业秘书处 description; null until supplied. */
+  /** 秘书处 description; null when the key is unset. */
   secretariat: BilingualText | null;
   /** Credentials / activity gallery — only already-published media. */
   gallery: GalleryItem[];
@@ -42,11 +43,14 @@ const CONTENT_KEYS = [
   "vision",
   "mission",
   "core_values",
+  "objectives",
   "pillars",
   "member_benefits",
   "revenue_note",
   "banners",
   "org_structure",
+  "council",
+  "outlook",
   "strategy_committee",
   "secretariat",
   "gallery",
@@ -68,13 +72,25 @@ function asText(value: Json | undefined): BilingualText | null {
   return text.text_zh || text.text_en ? text : null;
 }
 
+function asRecordList(value: Json | undefined): Record<string, Json>[] {
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
 function asItems(value: Json | undefined): Record<string, Json>[] {
-  if (!isRecord(value) || !Array.isArray(value.items)) return [];
-  return value.items.filter(isRecord);
+  return isRecord(value) ? asRecordList(value.items) : [];
 }
 
 function str(value: Json | undefined): string {
   return typeof value === "string" ? value : "";
+}
+
+function asBilingualList(items: Record<string, Json>[]): BilingualText[] {
+  return items
+    .map((item) => ({
+      text_zh: str(item.text_zh).trim(),
+      text_en: str(item.text_en).trim(),
+    }))
+    .filter((item) => item.text_zh || item.text_en);
 }
 
 function asTitledItems(value: Json | undefined): Pillar[] {
@@ -112,6 +128,43 @@ function asOrgUnits(value: Json | undefined): OrgUnit[] {
     .filter((unit) => unit.key && (unit.name_zh || unit.name_en));
 }
 
+/** `{ title_zh, title_en, members: [{ name_en, name_zh, note_en?, note_zh? }] }`.
+ *  A member needs at least one name; a missing name in one language falls
+ *  back to the other (roster rule). */
+function asCouncil(value: Json | undefined): CouncilRoster | null {
+  if (!isRecord(value)) return null;
+  const members = asRecordList(value.members)
+    .map((member) => {
+      const name_en = str(member.name_en).trim();
+      const name_zh = str(member.name_zh).trim();
+      return {
+        name_en: name_en || name_zh,
+        name_zh: name_zh || name_en,
+        note_en: str(member.note_en).trim(),
+        note_zh: str(member.note_zh).trim(),
+      };
+    })
+    .filter((member) => member.name_en);
+  if (members.length === 0) return null;
+  return {
+    title_zh: str(value.title_zh).trim(),
+    title_en: str(value.title_en).trim(),
+    members,
+  };
+}
+
+/** `{ title_zh, title_en, paragraphs: [{ text_zh, text_en }] }`. */
+function asOutlook(value: Json | undefined): OutlookData | null {
+  if (!isRecord(value)) return null;
+  const paragraphs = asBilingualList(asRecordList(value.paragraphs));
+  if (paragraphs.length === 0) return null;
+  return {
+    title_zh: str(value.title_zh).trim(),
+    title_en: str(value.title_en).trim(),
+    paragraphs,
+  };
+}
+
 function asGallery(value: Json | undefined): GalleryItem[] {
   return asItems(value)
     .map((item) => ({
@@ -127,13 +180,8 @@ function asGallery(value: Json | undefined): GalleryItem[] {
 /**
  * Structured content blocks stored under fixed site_settings keys. Each
  * key has a fixed shape edited through dedicated admin form sections —
- * never a free-form JSON textarea.
- *
- * Until the approved data migration seeds these keys remotely, the
- * design-review fixtures (flag-gated) provide the DOCX-traceable copy.
- * Blocks whose copy the chamber has not supplied (mission, core values,
- * committee / secretariat descriptions) have NO fixture: they stay
- * hidden until real data exists.
+ * never a free-form JSON textarea. The database is the single source of
+ * truth: a block whose key is unset simply does not render.
  */
 export async function getContentBlocks(): Promise<ContentBlocks> {
   const supabase = createPublicClient();
@@ -144,25 +192,15 @@ export async function getContentBlocks(): Promise<ContentBlocks> {
   if (error) throw new Error(`getContentBlocks: ${error.message}`);
   const map = new Map((data ?? []).map((row) => [row.key, row.value]));
 
-  const fixtures = designFixturesEnabled();
-
-  const vision = asText(map.get("vision")) ?? (fixtures ? FIXTURE_VISION : null);
+  const vision = asText(map.get("vision"));
   const mission = asText(map.get("mission"));
   const coreValues = asTitledItems(map.get("core_values"));
+  const objectives = asBilingualList(asItems(map.get("objectives")));
+  const pillars = asTitledItems(map.get("pillars"));
+  const memberBenefits = asBilingualList(asItems(map.get("member_benefits")));
+  const revenueNote = asText(map.get("revenue_note"));
 
-  let pillars = asTitledItems(map.get("pillars"));
-  if (pillars.length === 0 && fixtures) pillars = FIXTURE_PILLARS;
-
-  let memberBenefits: BilingualText[] = asItems(map.get("member_benefits")).map(
-    (item) => ({ text_zh: str(item.text_zh), text_en: str(item.text_en) }),
-  );
-  if (memberBenefits.length === 0 && fixtures)
-    memberBenefits = FIXTURE_MEMBER_BENEFITS;
-
-  const revenueNote =
-    asText(map.get("revenue_note")) ?? (fixtures ? FIXTURE_REVENUE_NOTE : null);
-
-  let banners: BannerData[] = asItems(map.get("banners"))
+  const banners: BannerData[] = asItems(map.get("banners"))
     .map((item) => ({
       key: str(item.key),
       title_zh: str(item.title_zh),
@@ -182,26 +220,26 @@ export async function getContentBlocks(): Promise<ContentBlocks> {
         (banner.title_zh || banner.title_en) &&
         banner.cta_href,
     );
-  if (banners.length === 0 && fixtures) banners = FIXTURE_BANNERS;
 
-  let orgStructure = asOrgUnits(map.get("org_structure"));
-  if (orgStructure.length === 0 && fixtures) orgStructure = FIXTURE_ORG_STRUCTURE;
-
+  const orgStructure = asOrgUnits(map.get("org_structure"));
+  const council = asCouncil(map.get("council"));
+  const outlook = asOutlook(map.get("outlook"));
   const strategyCommittee = asText(map.get("strategy_committee"));
   const secretariat = asText(map.get("secretariat"));
-
-  let gallery = asGallery(map.get("gallery"));
-  if (gallery.length === 0 && fixtures) gallery = FIXTURE_GALLERY;
+  const gallery = asGallery(map.get("gallery"));
 
   return {
     vision,
     mission,
     coreValues,
+    objectives,
     pillars,
     memberBenefits,
     revenueNote,
     banners,
     orgStructure,
+    council,
+    outlook,
     strategyCommittee,
     secretariat,
     gallery,

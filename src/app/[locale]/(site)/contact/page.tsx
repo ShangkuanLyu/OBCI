@@ -2,15 +2,9 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
-import { ReviewNote } from "@/components/ui/ReviewNote";
 import { ContactForm } from "@/components/forms/ContactForm";
 import { getSiteSettings, settingString } from "@/services/settings";
-import {
-  contactFieldState,
-  contactHasPendingFields,
-  type ContactField,
-} from "@/lib/review";
-import { isInternalReview, isPreviewDeployment } from "@/lib/preview";
+import { contactFieldState, type ContactField } from "@/lib/review";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
@@ -35,13 +29,6 @@ export async function generateMetadata({
 
 type WayItem = { href: string; label: string };
 
-const PENDING_CONTACT_FIELDS: ContactField[] = [
-  "address",
-  "phone",
-  "email",
-  "membership_contact",
-];
-
 export default async function ContactPage({
   params,
 }: {
@@ -54,22 +41,13 @@ export default async function ContactPage({
   const zh = locale === "zh";
 
   const settings = await getSiteSettings().catch(() => ({}));
-  const tCommon = await getTranslations("common");
   const s = (key: string, field: string, fallback = "") =>
     settingString(settings, key, field, fallback);
 
-  // Contact details are published only once the chamber confirms them
-  // (site_settings.contact.confirmed_fields). The local internal-review
-  // build shows unconfirmed values with a "pending" marker; production and
-  // the public preview never render them.
-  const pendingFields = new Set<ContactField>();
-  const c = (field: ContactField, key: string) => {
-    const state = contactFieldState(settings, field);
-    if (state === "hidden") return "";
-    const value = s("contact", key);
-    if (value && state === "pending") pendingFields.add(field);
-    return value;
-  };
+  // Contact details are published only where the CMS lists the field in
+  // site_settings.contact.confirmed_fields; anything else is not rendered.
+  const c = (field: ContactField, key: string) =>
+    contactFieldState(settings, field) === "hidden" ? "" : s("contact", key);
 
   const address = c("address", zh ? "address_zh" : "address_en");
   const addressLabel = s("contact", zh ? "address_label_zh" : "address_label_en", t("address"));
@@ -81,23 +59,6 @@ export default async function ContactPage({
   const wechat = c("wechat", zh ? "wechat_zh" : "wechat_en");
   const membershipContactName = c("membership_contact", "membership_contact_name");
   const membershipContactPhone = c("membership_contact", "membership_contact_phone");
-  const detailsPending =
-    isPreviewDeployment() &&
-    contactHasPendingFields(settings, PENDING_CONTACT_FIELDS);
-  const pendingBadge = (
-    <span className="ml-2 inline-block rounded-full border border-grey-300 px-2 py-0.5 align-middle text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-grey-500">
-      {tCommon("pendingConfirmation")}
-    </span>
-  );
-  const withBadge = (field: ContactField, value: React.ReactNode) =>
-    pendingFields.has(field) ? (
-      <>
-        {value}
-        {pendingBadge}
-      </>
-    ) : (
-      value
-    );
 
   // "Ways to work with us" — stored as a top-level array under the
   // partner_routes settings key.
@@ -116,24 +77,23 @@ export default async function ContactPage({
     : [];
 
   const rows: { label: string; value: React.ReactNode }[] = [
-    ...(address ? [{ label: addressLabel, value: withBadge("address", address) }] : []),
+    ...(address ? [{ label: addressLabel, value: address }] : []),
     ...(address2 && address2Label
-      ? [{ label: address2Label, value: withBadge("address2", address2) }]
+      ? [{ label: address2Label, value: address2 }]
       : []),
-    ...(phone ? [{ label: t("phone"), value: withBadge("phone", phone) }] : []),
-    ...(fax ? [{ label: t("fax"), value: withBadge("fax", fax) }] : []),
+    ...(phone ? [{ label: t("phone"), value: phone }] : []),
+    ...(fax ? [{ label: t("fax"), value: fax }] : []),
     ...(email
       ? [
           {
             label: t("email"),
-            value: withBadge(
-              "email",
+            value: (
               <a
                 href={`mailto:${email}`}
                 className="text-sea-800 transition-colors duration-200 hover:text-sea-600 hover:underline"
               >
                 {email}
-              </a>,
+              </a>
             ),
           },
         ]
@@ -142,14 +102,11 @@ export default async function ContactPage({
       ? [
           {
             label: t("membershipContact"),
-            value: withBadge(
-              "membership_contact",
-              `${membershipContactName}${membershipContactPhone ? ` · ${membershipContactPhone}` : ""}`,
-            ),
+            value: `${membershipContactName}${membershipContactPhone ? ` · ${membershipContactPhone}` : ""}`,
           },
         ]
       : []),
-    ...(wechat ? [{ label: t("wechat"), value: withBadge("wechat", wechat) }] : []),
+    ...(wechat ? [{ label: t("wechat"), value: wechat }] : []),
   ];
 
   return (
@@ -164,7 +121,7 @@ export default async function ContactPage({
           <div className="grid gap-y-16 md:grid-cols-12 md:gap-x-10">
             {/* Contact details + ways to work with us */}
             <div className="md:col-span-5">
-              {(rows.length > 0 || detailsPending) && (
+              {rows.length > 0 && (
                 <div className="card-surface p-7 md:p-8">
                   <h2 className="text-h4 font-semibold text-ink">
                     {t("infoTitle")}
@@ -183,17 +140,11 @@ export default async function ContactPage({
                       ))}
                     </dl>
                   )}
-                  {detailsPending && (
-                    <ReviewNote className="mt-6">
-                      {t("detailsPending")}
-                      {isInternalReview() && ` ${tCommon("internalReviewOnly")}`}
-                    </ReviewNote>
-                  )}
                 </div>
               )}
 
               {ways.length > 0 && (
-                <div className={rows.length > 0 || detailsPending ? "mt-8" : undefined}>
+                <div className={rows.length > 0 ? "mt-8" : undefined}>
                   <h2 className="text-caption font-semibold uppercase tracking-[0.06em] text-grey-500">
                     {t("waysTitle")}
                   </h2>
@@ -223,8 +174,8 @@ export default async function ContactPage({
               </h2>
               <div className="mt-8">
                 {/* Rendered inline (no Suspense): the form reads ?topic=
-                    after mount, so the static export carries the full,
-                    disabled markup. */}
+                    after mount, so the static export carries the full
+                    markup. */}
                 <ContactForm />
               </div>
             </div>

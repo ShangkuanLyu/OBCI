@@ -8,7 +8,7 @@ const EN_NUMERALS = [
 
 /**
  * Count word for headings that state how many items a data-driven list
- * holds ("六大行业分会" / "Six industry chapters"): numerals up to ten,
+ * holds ("九大专业分会" / "Nine professional committees"): numerals up to ten,
  * digits beyond, so copy can never contradict the published rows.
  * Dependency-free so it runs under `node --test`.
  */

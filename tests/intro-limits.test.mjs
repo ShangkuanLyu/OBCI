@@ -9,7 +9,7 @@ import {
 
 describe("Chinese introduction (500 characters)", () => {
   test("counts code points, trimming ASCII and ideographic spaces", () => {
-    assert.equal(countChars("　大洋洲工商协会 　"), 7);
+    assert.equal(countChars("　大洋洲工商业委员会 　"), 9);
     assert.equal(zhIntroMetrics("大".repeat(500)).ok, true);
     assert.equal(zhIntroMetrics("大".repeat(501)).ok, false);
     assert.equal(zhIntroMetrics("").count, 0);

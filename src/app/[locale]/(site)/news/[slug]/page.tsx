@@ -6,16 +6,28 @@ import { Container } from "@/components/ui/Container";
 import { getAllNewsSlugs, getNewsBySlug, getPublishedNews } from "@/services/news";
 import { ShareActions } from "@/components/news/ShareActions";
 import { ButtonLink } from "@/components/ui/Button";
-import { JsonLd } from "@/components/seo/JsonLd";
-import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
-import { isLegacyNewsCategory, newsCategoryName } from "@/lib/news/categories";
-import { designFixturesEnabled } from "@/lib/fixtures/design-review";
+import { JsonLd, ORGANIZATION_NAME } from "@/components/seo/JsonLd";
+import { loc, formatDate, imageUrl, mediaUrl } from "@/lib/utils/l10n";
+import { newsCategoryName } from "@/lib/news/categories";
 import { renderMarkdown } from "@/lib/utils/markdown";
-import { absoluteUrl, pageMetadata } from "@/lib/seo";
+import { absoluteUrl, pageMetadata, siteUrl } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
+
+/**
+ * Absolute cover URL for Open Graph / JSON-LD. A storage path is already
+ * absolute; a site asset shipped in public/ ("/news-media/…") is joined to
+ * the site URL (which already carries the deployment base path) rather
+ * than left to metadataBase, whose URL composition would prepend the base
+ * path twice.
+ */
+function absoluteCoverUrl(path: string | null): string | undefined {
+  if (!path) return undefined;
+  if (path.startsWith("/")) return `${siteUrl()}${path}`;
+  return mediaUrl(path) ?? undefined;
+}
 
 export async function generateStaticParams() {
   const slugs = await getAllNewsSlugs().catch(() => []);
@@ -30,13 +42,13 @@ export async function generateMetadata({
   const { locale, slug } = await params;
   const article = await getNewsBySlug(slug).catch(() => null);
   if (!article) return {};
-  const cover = mediaUrl(article.cover_image_path);
+  const cover = absoluteCoverUrl(article.cover_image_path);
   return pageMetadata({
     locale,
     path: `/news/${slug}`,
     title: loc(article, "title", locale as Locale),
     description: loc(article, "summary", locale as Locale),
-    ogImage: cover ?? undefined,
+    ogImage: cover,
     ogType: "article",
     publishedTime: article.published_at ?? undefined,
     modifiedTime: article.updated_at,
@@ -63,14 +75,11 @@ export default async function NewsArticlePage({
       ? !article.body_zh?.trim() && !!article.body_en?.trim()
       : !article.body_en?.trim() && !!article.body_zh?.trim();
 
+  const cover = imageUrl(article.cover_image_path);
+
   const related = (await getPublishedNews({ limit: 4 }).catch(() => []))
     .filter((a) => a.slug !== slug)
     .slice(0, 3);
-
-  // Legacy category (outside the DOCX five): shown, but marked as pending
-  // re-assignment — see lib/news/categories.
-  const fixtures = designFixturesEnabled();
-  const categoryLegacy = isLegacyNewsCategory(article.category, fixtures);
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -81,12 +90,12 @@ export default async function NewsArticlePage({
     dateModified: article.updated_at,
     author: article.author_name
       ? { "@type": "Person", name: article.author_name }
-      : { "@type": "Organization", name: "Oceania Business Association Incorporated" },
+      : { "@type": "Organization", name: ORGANIZATION_NAME },
     publisher: {
       "@type": "Organization",
-      name: "Oceania Business Association Incorporated",
+      name: ORGANIZATION_NAME,
     },
-    image: mediaUrl(article.cover_image_path) ?? undefined,
+    image: absoluteCoverUrl(article.cover_image_path),
     mainEntityOfPage: absoluteUrl(locale, `/news/${slug}`),
   };
 
@@ -98,24 +107,15 @@ export default async function NewsArticlePage({
         <Container className="pb-12 pt-12 md:pb-14 md:pt-16">
           <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-caption">
             {article.category && (
-              <span
-                className={
-                  categoryLegacy
-                    ? "rounded-full border border-dashed border-grey-300 bg-white px-2.5 py-1 font-medium text-grey-600"
-                    : "rounded-full bg-white px-2.5 py-1 font-medium text-sea-800"
-                }
-              >
-                {newsCategoryName(article.category, locale, fixtures)}
-                {categoryLegacy && (
-                  <span className="ml-1.5 font-normal text-grey-500">
-                    · {t("legacyCategory")}
-                  </span>
-                )}
+              <span className="rounded-full bg-white px-2.5 py-1 font-medium text-sea-800">
+                {newsCategoryName(article.category, locale)}
               </span>
             )}
-            <span className="text-grey-500">
-              {formatDate(article.published_at, locale)}
-            </span>
+            {article.published_at && (
+              <span className="text-grey-500">
+                {formatDate(article.published_at, locale)}
+              </span>
+            )}
             {article.author_name && (
               <span className="text-grey-500">· {article.author_name}</span>
             )}
@@ -128,10 +128,10 @@ export default async function NewsArticlePage({
 
       <article className="bg-white py-14 md:py-20">
         <Container>
-          {mediaUrl(article.cover_image_path) && (
+          {cover && (
             <div className="relative mx-auto mb-12 aspect-[2/1] max-w-[56rem] overflow-hidden rounded-lg bg-sea-50">
               <Image
-                src={mediaUrl(article.cover_image_path)!}
+                src={cover}
                 alt={t("coverAlt", { title: loc(article, "title", locale) })}
                 fill
                 sizes="(min-width: 1024px) 896px, 100vw"

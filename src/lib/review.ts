@@ -1,16 +1,15 @@
 import type { Json } from "@/types/database.types";
 import type { SiteSettings } from "@/services/settings";
-import { isInternalReview } from "@/lib/preview";
 
 /**
- * Chamber-confirmation gates for content that exists in the database but
- * has not been ratified for publication. Everything here is data-driven:
- * the flags live in `site_settings` and are edited through the admin
- * settings module, so no confirmation state is hard-coded in components.
+ * Publication gates for content that exists in the database but is not
+ * automatically public. Everything here is data-driven: the flags live in
+ * `site_settings` and are edited through the admin settings module, so no
+ * publication state is hard-coded in components.
  *
- * Absence of a flag means "not confirmed" — a module, field or legal text
- * only becomes public once the chamber confirms it in the CMS. Nothing is
- * inferred from legacy flags or from where a value was printed.
+ * Absence of a flag means "not published" — a module, field or legal text
+ * becomes public only once it is listed in the CMS. Nothing is inferred
+ * from where a value happens to be printed.
  */
 
 function record(value: Json | undefined): Record<string, Json> | null {
@@ -41,45 +40,33 @@ export const CONTACT_FIELDS = [
 ] as const;
 export type ContactField = (typeof CONTACT_FIELDS)[number];
 
-/** Contact fields the chamber has confirmed for publication
+/** Contact fields published on the site
  *  (`site_settings.contact.confirmed_fields`, edited in the CMS). */
 export function confirmedContactFields(settings: SiteSettings): Set<string> {
   const contact = record(settings["contact"]);
   return new Set(stringList(contact?.["confirmed_fields"]));
 }
 
-export type ContactFieldState = "confirmed" | "pending" | "hidden";
+export type ContactFieldState = "confirmed" | "hidden";
 
 /**
  * How a contact field may be shown:
- *  - confirmed → published normally;
- *  - pending   → shown ONLY in the local internal review build, with an
- *                explicit "pending chamber confirmation" marker;
- *  - hidden    → not rendered (production and the public review preview).
+ *  - confirmed → listed in `contact.confirmed_fields`, published normally;
+ *  - hidden    → not rendered at all.
  */
 export function contactFieldState(
   settings: SiteSettings,
   field: ContactField,
 ): ContactFieldState {
-  if (confirmedContactFields(settings).has(field)) return "confirmed";
-  return isInternalReview() ? "pending" : "hidden";
-}
-
-/** True when at least one field is not confirmed (drives review notes). */
-export function contactHasPendingFields(
-  settings: SiteSettings,
-  fields: readonly ContactField[] = CONTACT_FIELDS,
-): boolean {
-  const confirmed = confirmedContactFields(settings);
-  return fields.some((field) => !confirmed.has(field));
+  return confirmedContactFields(settings).has(field) ? "confirmed" : "hidden";
 }
 
 /* ------------------------------------------------------------------ */
 /* Modules                                                              */
 /* ------------------------------------------------------------------ */
 
-/** Site modules (e.g. "partners") whose underlying data the chamber has
- *  confirmed for publication. Stored as `review.confirmed_modules`. */
+/** Site modules (e.g. "partners") whose underlying data is published.
+ *  Stored as `review.confirmed_modules`. */
 export function isModuleConfirmed(
   settings: SiteSettings,
   module: string,
@@ -92,6 +79,9 @@ export function isModuleConfirmed(
 /* Legal texts                                                          */
 /* ------------------------------------------------------------------ */
 
+/** Documents that can carry a published version stamp. The constitution
+ *  is the association's governing document, issued by the secretariat on
+ *  request, so it is listed but never published on the site. */
 export const LEGAL_DOCUMENTS = [
   "constitution",
   "terms",
@@ -100,9 +90,9 @@ export const LEGAL_DOCUMENTS = [
 ] as const;
 export type LegalDocument = (typeof LEGAL_DOCUMENTS)[number];
 
-/** Approved version stamp of one legal document (`legal.<doc>_version`),
- *  or null while the chamber has not approved a text. A page whose
- *  document is unapproved must not publish its draft body. */
+/** Published version stamp of one legal document (`legal.<doc>_version`),
+ *  or null when no text is published. A page whose document has no stamp
+ *  must not publish a body. */
 export function legalDocumentVersion(
   settings: SiteSettings,
   doc: LegalDocument,
@@ -113,36 +103,39 @@ export function legalDocumentVersion(
 }
 
 export type LegalStatus = {
-  /** The three consent documents (constitution, terms, privacy) are all
-   *  approved, so the application form may accept submissions. */
+  /** Both published policies (terms, privacy) carry a version stamp, so
+   *  the application form may accept submissions. */
   approved: boolean;
-  /** Version stamp recorded with each consent, e.g.
-   *  "constitution=2026-10;terms=2026-10;privacy=2026-10". The RPC
-   *  recomputes the same string from site_settings and rejects mismatches. */
+  /** Version stamp recorded with the applicant's consent, e.g.
+   *  "terms=2026-09;privacy=2026-09". Byte-identical to the stamp the RPC
+   *  recomputes from site_settings; a mismatch is rejected server-side
+   *  (supabase/migrations/20260902120000_application_form_v2.sql). */
   policyVersion: string | null;
-  /** Site path (or URL) where the constitution text is published;
+  /** Site path (or URL) describing the constitution and how to request it;
    *  `legal.constitution_url`, defaulting to the constitution page. */
   constitutionHref: string;
 };
 
-/** Approved legal-text versions, stored under `legal`:
- *  `{ constitution_version, terms_version, privacy_version,
- *     accessibility_version?, constitution_url? }`.
- *  Until the three consent documents are approved the application form
- *  must not accept submissions — there is nothing lawful for an applicant
- *  to consent to. */
+/** Published legal-text versions, stored under `legal`:
+ *  `{ terms_version, privacy_version, accessibility_version?,
+ *     constitution_url? }`.
+ *
+ *  Only the two policies the website itself publishes are gated here. The
+ *  constitution is the association's own governing document, issued by the
+ *  secretariat on request, so it carries no published version; the
+ *  applicant's undertaking to be bound by it is still recorded with the
+ *  application, exactly as on the paper form. Until terms and privacy are
+ *  both published the form must not accept submissions — there is nothing
+ *  lawful for an applicant to consent to. */
 export function legalStatus(settings: SiteSettings): LegalStatus {
-  const constitution = legalDocumentVersion(settings, "constitution");
   const terms = legalDocumentVersion(settings, "terms");
   const privacy = legalDocumentVersion(settings, "privacy");
-  const approved = Boolean(constitution && terms && privacy);
+  const approved = Boolean(terms && privacy);
   const legal = record(settings["legal"]);
   const url = legal?.["constitution_url"];
   return {
     approved,
-    policyVersion: approved
-      ? `constitution=${constitution};terms=${terms};privacy=${privacy}`
-      : null,
+    policyVersion: approved ? `terms=${terms};privacy=${privacy}` : null,
     constitutionHref:
       typeof url === "string" && url.trim() !== "" ? url.trim() : "/constitution",
   };

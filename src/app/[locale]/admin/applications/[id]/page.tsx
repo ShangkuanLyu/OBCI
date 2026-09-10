@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils/cn";
+import { paymentMethodLabel } from "@/lib/utils/payment-methods.mjs";
 import {
   ApplicationReview,
   type ConsentSummary,
@@ -103,6 +104,7 @@ export default async function AdminApplicationDetailPage({
     agreedMarketing: application.agreed_marketing,
     consentAt: formatDate(v2.consent_at),
     policyVersion: v2.policy_version,
+    paymentMethod: application.payment_method,
   };
 
   const details: { label: string; value: React.ReactNode }[] = [
@@ -127,6 +129,10 @@ export default async function AdminApplicationDetailPage({
           ? application.membership_type.name_zh
           : application.membership_type.name_en
         : "—",
+    },
+    {
+      label: zh ? "缴费方式" : "Payment method",
+      value: paymentMethodLabel(application.payment_method, locale),
     },
     {
       label: zh ? "企业简介（中文）" : "Introduction (Chinese)",

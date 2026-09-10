@@ -4,13 +4,12 @@ import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
-import { ReviewNote } from "@/components/ui/ReviewNote";
 import { OrgChart } from "@/components/about/OrgChart";
+import { CouncilRoster } from "@/components/about/CouncilRoster";
 import { getChapters, getPartners } from "@/services/organisation";
 import { getContentBlocks } from "@/services/content";
 import { getSiteSettings } from "@/services/settings";
 import { isModuleConfirmed } from "@/lib/review";
-import { isPreviewDeployment } from "@/lib/preview";
 import { loc } from "@/lib/utils/l10n";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
@@ -43,6 +42,7 @@ export default async function StructurePage({
   const locale = rawLocale as Locale;
   const t = await getTranslations("structure");
   const tAbout = await getTranslations("about");
+  const tLeadership = await getTranslations("leadership");
 
   const [chapters, content, settings] = await Promise.all([
     getChapters().catch(() => []),
@@ -54,12 +54,13 @@ export default async function StructurePage({
     ? await getPartners().catch(() => [])
     : [];
   const units = content?.orgStructure ?? [];
+  const council = content?.council ?? null;
 
   return (
     <>
       <PageHero title={t("title")} standfirst={t("standfirst")} />
 
-      {/* Structure chart — CMS units, chapters expanded from live rows */}
+      {/* Structure chart — CMS units, committees expanded from live rows */}
       {units.length > 0 && (
         <section className="bg-white py-16 md:py-24">
           <Container>
@@ -77,9 +78,24 @@ export default async function StructurePage({
         </section>
       )}
 
-      {/* Industry chapters — numbered card tiles */}
+      {/* Council roster — compact name grid, no portraits */}
+      {council && (
+        <section id="council" className="scroll-mt-24 bg-grey-50 py-16 md:py-24">
+          <Container>
+            <SectionHeading
+              title={tLeadership("councilTitle")}
+              standfirst={tLeadership("councilNote")}
+            />
+            <div className="mt-10">
+              <CouncilRoster members={council.members} locale={locale} />
+            </div>
+          </Container>
+        </section>
+      )}
+
+      {/* Professional committees — numbered card tiles */}
       {chapters.length > 0 && (
-        <section className="bg-grey-50 py-16 md:py-24">
+        <section className="bg-white py-16 md:py-24">
           <Container>
             <SectionHeading
               title={t("committeesTitle")}
@@ -103,6 +119,12 @@ export default async function StructurePage({
                         {t("secretaryGeneral")} · {chapter.secretary_general}
                       </p>
                     )}
+                    {chapter.deputy_secretary_general && (
+                      <p className="mt-1 text-small text-grey-500">
+                        {t("deputySecretaryGeneral")} ·{" "}
+                        {chapter.deputy_secretary_general}
+                      </p>
+                    )}
                   </Link>
                 </Reveal>
               ))}
@@ -112,8 +134,8 @@ export default async function StructurePage({
       )}
 
       {/* Partnerships — published only once the chamber confirms the list */}
-      {partnersConfirmed && partners.length > 0 ? (
-        <section className="bg-white py-16 md:py-24">
+      {partnersConfirmed && partners.length > 0 && (
+        <section className="bg-grey-50 py-16 md:py-24">
           <Container>
             <h2 className="text-center text-caption font-semibold uppercase tracking-[0.08em] text-sea-800">
               {t("partnershipsTitle")}
@@ -130,16 +152,6 @@ export default async function StructurePage({
             </p>
           </Container>
         </section>
-      ) : (
-        isPreviewDeployment() && (
-          <section className="bg-white py-6">
-            <Container>
-              <ReviewNote>
-                {tAbout("reviewCmsPending", { module: t("partnershipsTitle") })}
-              </ReviewNote>
-            </Container>
-          </section>
-        )
       )}
     </>
   );

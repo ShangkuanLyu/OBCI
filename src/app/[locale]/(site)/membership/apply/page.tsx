@@ -1,23 +1,18 @@
+import { Fragment } from "react";
 import { setRequestLocale, getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ButtonLink } from "@/components/ui/Button";
-import { ReviewNote } from "@/components/ui/ReviewNote";
 import { ApplyForm } from "@/components/forms/ApplyForm";
 import { getMembershipTypes } from "@/services/membership";
-import { getSiteSettings, settingString } from "@/services/settings";
 import {
-  contactFieldState,
-  contactHasPendingFields,
-  legalStatus,
-  type ContactField,
-} from "@/lib/review";
-import {
-  isInternalReview,
-  isPreviewDeployment,
-  submissionsDisabled,
-} from "@/lib/preview";
+  bankDetails,
+  getSiteSettings,
+  settingString,
+} from "@/services/settings";
+import { contactFieldState, legalStatus, type ContactField } from "@/lib/review";
 import { loc } from "@/lib/utils/l10n";
 import { formatFeeAmount } from "@/lib/utils/fee";
 import { pageMetadata } from "@/lib/seo";
@@ -41,11 +36,6 @@ export async function generateMetadata({
   });
 }
 
-const PENDING_CONTACT_FIELDS: ContactField[] = [
-  "address",
-  "email",
-  "membership_contact",
-];
 
 export default async function ApplyPage({
   params,
@@ -68,14 +58,15 @@ export default async function ApplyPage({
   const typeOptions = types.map((type) => ({
     code: type.code,
     label: loc(type, "name", locale),
+    price_annual: type.price_annual != null ? Number(type.price_annual) : null,
+    currency: type.currency,
   }));
 
-  // Applications are accepted only against approved legal texts. Without
-  // them there is nothing lawful to consent to, so production shows the
-  // pending card instead; review builds still show the (disabled) form.
+  // Applications are accepted only against published policies (terms and
+  // privacy carry a version stamp in site_settings.legal, and the RPC
+  // enforces the same gate). Without them there is nothing lawful to
+  // consent to, so the unavailable card replaces the form.
   const legal = legalStatus(settings);
-  const disabled = submissionsDisabled();
-  const showForm = legal.approved || disabled;
 
   const validityNote = settingString(
     settings,
@@ -84,17 +75,27 @@ export default async function ApplyPage({
     t("feeValidity"),
   );
 
-  // Contact details are published only once the chamber confirms them
-  // (site_settings.contact.confirmed_fields); the local internal-review
-  // build shows unconfirmed values with a "pending" marker.
-  const pendingFields = new Set<ContactField>();
-  const contactField = (field: ContactField, key: string) => {
-    const state = contactFieldState(settings, field);
-    if (state === "hidden") return "";
-    const value = settingString(settings, "contact", key, "");
-    if (value && state === "pending") pendingFields.add(field);
-    return value;
-  };
+  // Manual fee payment (owner decision D7, no online payment): the council
+  // bank account from site_settings.bank is published as plain text, not
+  // gated by chamber confirmation. Without a complete account the card
+  // keeps the generic "instructions by email" sentence.
+  const bank = bankDetails(settings);
+  const bankRows = bank
+    ? [
+        [t("bankAccountName"), bank.account_name],
+        [t("bankName"), bank.bank_name],
+        [t("bankBsb"), bank.bsb],
+        [t("bankAccountNumber"), bank.account_number],
+        [t("bankReference"), t("bankReferenceValue")],
+      ]
+    : [];
+
+  // Contact details are published only where the CMS lists the field in
+  // site_settings.contact.confirmed_fields; anything else is not rendered.
+  const contactField = (field: ContactField, key: string) =>
+    contactFieldState(settings, field) === "hidden"
+      ? ""
+      : settingString(settings, "contact", key, "");
   const contactName = contactField(
     "membership_contact",
     "membership_contact_name",
@@ -109,14 +110,6 @@ export default async function ApplyPage({
     zh ? "address_zh" : "address_en",
   );
   const hasContact = Boolean(contactName || contactEmail || contactAddress);
-  const contactPending =
-    isPreviewDeployment() &&
-    contactHasPendingFields(settings, PENDING_CONTACT_FIELDS);
-  const pendingBadge = (
-    <span className="ml-2 inline-block rounded-full border border-grey-300 px-2 py-0.5 align-middle text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-grey-500">
-      {tCommon("pendingConfirmation")}
-    </span>
-  );
 
   const steps = [1, 2, 3, 4] as const;
 
@@ -153,7 +146,7 @@ export default async function ApplyPage({
       {types.length > 0 && (
         <section className="bg-grey-50 py-16 md:py-20">
           <Container>
-            <SectionHeading title={t("feesTitle")} />
+            <SectionHeading title={t("feesTitle")} standfirst={t("feeNote")} />
             <div className="mt-8 overflow-x-auto rounded-xl border border-grey-100 bg-white">
               <table className="w-full min-w-[36rem] text-left text-small">
                 <thead>
@@ -223,13 +216,10 @@ export default async function ApplyPage({
                   >
                     {tCommon("contactUs")}
                   </ButtonLink>
-                  <ReviewNote className="mt-6">
-                    {t("legalPendingReviewNote")}
-                  </ReviewNote>
                 </div>
               )}
-              {showForm && (
-                <div className={legal.approved ? undefined : "mt-12"}>
+              {legal.approved && (
+                <div>
                   <SectionHeading title={t("formTitle")} />
                   <div className="mt-10">
                     <ApplyForm
@@ -242,17 +232,69 @@ export default async function ApplyPage({
               )}
             </div>
             <aside className="md:col-span-4 md:col-start-9">
-              {/* Payment — process description only. No account details or
-                  payment buttons until methods are formally confirmed. */}
+              {/* Payment — three manual methods with the council's bank
+                  account as plain text. No payment buttons and no card
+                  fields: nothing on this site collects payment data. */}
               <div className="card-surface p-6">
                 <h2 className="text-body font-semibold text-ink">
                   {t("paymentTitle")}
                 </h2>
-                <p className="mt-2.5 text-small leading-relaxed text-grey-600">
-                  {t("paymentText")}
-                </p>
+                {bank ? (
+                  <>
+                    <p className="mt-2.5 text-small leading-relaxed text-grey-600">
+                      {t("paymentIntro")}
+                    </p>
+                    <div className="mt-5 space-y-5 border-t border-grey-100 pt-5">
+                      <div>
+                        <h3 className="text-small font-semibold text-ink">
+                          {t("paymentBankTransfer")}
+                        </h3>
+                        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-small">
+                          {bankRows.map(([label, value]) => (
+                            <Fragment key={label}>
+                              <dt className="text-grey-500">{label}</dt>
+                              <dd className="tabular-nums text-ink">{value}</dd>
+                            </Fragment>
+                          ))}
+                        </dl>
+                      </div>
+                      <div>
+                        <h3 className="text-small font-semibold text-ink">
+                          {t("paymentCheque")}
+                        </h3>
+                        <p className="mt-2 text-small leading-relaxed text-grey-600">
+                          {t("chequePayable", { name: bank.account_name })}{" "}
+                          {t.rich("chequeDeliver", {
+                            link: (chunks) => (
+                              <Link
+                                href="/contact"
+                                className="text-sea-800 underline underline-offset-2 hover:text-sea-600"
+                              >
+                                {chunks}
+                              </Link>
+                            ),
+                          })}
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="text-small font-semibold text-ink">
+                          {t("paymentCreditCard")}
+                        </h3>
+                        <p className="mt-2 text-small leading-relaxed text-grey-600">
+                          {bank.cards &&
+                            `${t("creditCardCards", { cards: bank.cards })} `}
+                          {t("creditCardText")}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-2.5 text-small leading-relaxed text-grey-600">
+                    {t("paymentText")}
+                  </p>
+                )}
               </div>
-              {(hasContact || contactPending) && (
+              {hasContact && (
                 <div className="card-surface mt-6 p-6">
                   <h2 className="text-body font-semibold text-ink">
                     {t("contactTitle")}
@@ -267,7 +309,6 @@ export default async function ApplyPage({
                               {contactPhone}
                             </span>
                           )}
-                          {pendingFields.has("membership_contact") && pendingBadge}
                         </li>
                       )}
                       {contactEmail && (
@@ -278,7 +319,6 @@ export default async function ApplyPage({
                           >
                             {contactEmail}
                           </a>
-                          {pendingFields.has("email") && pendingBadge}
                         </li>
                       )}
                       {contactAddress && (
@@ -287,16 +327,9 @@ export default async function ApplyPage({
                             {tContact("address")}
                           </span>
                           {contactAddress}
-                          {pendingFields.has("address") && pendingBadge}
                         </li>
                       )}
                     </ul>
-                  )}
-                  {contactPending && (
-                    <ReviewNote className="mt-4">
-                      {tContact("detailsPending")}
-                      {isInternalReview() && ` ${tCommon("internalReviewOnly")}`}
-                    </ReviewNote>
                   )}
                 </div>
               )}

@@ -30,6 +30,7 @@ const chapterSchema = z.object({
   services_zh: z.string().trim().max(3000),
   services_en: z.string().trim().max(3000),
   secretary_general: z.string().trim().max(200),
+  deputy_secretary_general: z.string().trim().max(200),
   contact_email: z.string().trim().email().max(320).optional().or(z.literal("")),
   display_order: z.coerce.number().int().min(0).max(9999),
 });
@@ -66,6 +67,7 @@ function parseFields(formData: FormData) {
     services_zh: formData.get("services_zh") ?? "",
     services_en: formData.get("services_en") ?? "",
     secretary_general: formData.get("secretary_general") ?? "",
+    deputy_secretary_general: formData.get("deputy_secretary_general") ?? "",
     contact_email: formData.get("contact_email") ?? "",
     display_order: formData.get("display_order") || 0,
   });
@@ -92,6 +94,7 @@ function toRecord(
     services_zh: toLines(d.services_zh),
     services_en: toLines(d.services_en),
     secretary_general: d.secretary_general || null,
+    deputy_secretary_general: d.deputy_secretary_general || null,
     contact_email: d.contact_email ? d.contact_email.toLowerCase() : null,
     display_order: d.display_order,
     is_active: isActive,
@@ -108,6 +111,7 @@ const PENDING_COLUMNS = [
   "experts_en",
   "certifications_zh",
   "certifications_en",
+  "deputy_secretary_general",
 ] as const;
 
 type PendingColumn = (typeof PENDING_COLUMNS)[number];
@@ -127,7 +131,7 @@ function isUndefinedColumn(code: string | undefined): boolean {
 
 /**
  * Pre-migration fallback: production still lacks the experts_* /
- * certifications_* columns. The full record is written first; if the
+ * certifications_* / deputy_secretary_general columns. The full record is written first; if the
  * database rejects it for an undefined column, the write is retried once
  * without those keys so editors can keep saving every other field. Once
  * the migration is applied the first attempt succeeds and nothing is lost.

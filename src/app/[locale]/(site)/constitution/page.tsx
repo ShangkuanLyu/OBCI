@@ -1,7 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
-import { ReviewNote } from "@/components/ui/ReviewNote";
 import { getSiteSettings } from "@/services/settings";
 import { legalDocumentVersion } from "@/lib/review";
 import { pageMetadata } from "@/lib/seo";
@@ -19,23 +18,29 @@ export async function generateMetadata({
     getTranslations({ locale, namespace: "legal" }),
     getSiteSettings().catch(() => ({})),
   ]);
-  const approved = legalDocumentVersion(settings, "constitution") !== null;
+  const published = legalDocumentVersion(settings, "constitution") !== null;
   return {
     ...pageMetadata({
       locale,
       path: "/constitution",
       title: t("constitutionTitle"),
+      description:
+        locale === "zh"
+          ? "协会章程为大洋洲工商协会的治理文件，由秘书处应要求提供，不在网站公开发布。"
+          : "The association constitution is the governing document of Oceania Business Association Incorporated, issued by the secretariat on request rather than published on this website.",
     }),
-    // An unpublished placeholder must never be indexed.
-    ...(approved ? {} : { robots: { index: false, follow: false } }),
+    // The constitution text is not published on the site, so the page is
+    // a pointer for applicants rather than a document for crawlers.
+    ...(published ? {} : { robots: { index: false, follow: false } }),
   };
 }
 
 /**
  * Destination of the application form's constitution consent link
- * (lib/review.ts legalStatus().constitutionHref). No draft of the
- * constitution exists in this codebase, so every environment shows the
- * unpublished notice until the chamber supplies the approved text.
+ * (lib/review.ts legalStatus().constitutionHref). The constitution is the
+ * association's own governing document, issued by the secretariat on
+ * request exactly as on the paper application form, so the site does not
+ * publish its text — this page says where to obtain it.
  */
 export default async function ConstitutionPage({
   params,
@@ -54,9 +59,8 @@ export default async function ConstitutionPage({
         <Container>
           <div className="max-w-[42rem]">
             <p className="text-body leading-relaxed text-grey-600">
-              {t("unpublishedNotice")}
+              {t("constitutionNotice")}
             </p>
-            <ReviewNote className="mt-6" />
           </div>
         </Container>
       </section>

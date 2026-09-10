@@ -11,8 +11,8 @@ export type NewsFilterItem = {
   date: string;
   categorySlug: string | null;
   categoryName: string;
-  /** Category is legacy (see lib/news/categories): listed under "全部",
-   *  marked "历史分类待整理", never offered as a tab. */
+  /** Category is legacy (see lib/news/categories): still listed under
+   *  "全部", never offered as a tab. */
   categoryLegacy: boolean;
   image: string | null;
   featured: boolean;

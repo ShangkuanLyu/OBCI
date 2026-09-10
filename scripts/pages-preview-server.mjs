@@ -1,5 +1,5 @@
 // GitHub Pages behaviour emulator for the static export produced by
-// scripts/build-static-preview.sh. Serves the staged directory under the
+// scripts/build-static.sh. Serves the staged directory under the
 // base path:
 //  * directory URLs serve their index.html;
 //  * URLs missing the trailing slash 301-redirect to the slashed form

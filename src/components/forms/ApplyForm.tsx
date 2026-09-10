@@ -4,15 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { submissionsDisabled } from "@/lib/preview";
 import {
   EN_INTRO_MAX_CHARS,
   ZH_INTRO_MAX_CHARS,
   enIntroMetrics,
   zhIntroMetrics,
 } from "@/lib/apply/intro-limits";
+import { formatFeeAmount } from "@/lib/utils/fee";
+import { PAYMENT_METHODS } from "@/lib/utils/payment-methods.mjs";
 import { Button } from "@/components/ui/Button";
-import { PreviewFormNotice } from "@/components/forms/PreviewFormNotice";
 
 type Status = "idle" | "pending" | "success" | "partial" | "error";
 
@@ -25,6 +25,9 @@ type ErrorKey =
   | "errorIntroRequired"
   | "errorInvalidType"
   | "errorNameRequired"
+  | "errorCompanyAddressRequired"
+  | "errorCompanyPhoneRequired"
+  | "errorPaymentMethod"
   | "errorFormUnavailable";
 
 /** Exception texts raised by submit_membership_application_v2 → message
@@ -38,6 +41,9 @@ const RPC_ERRORS: ReadonlyArray<readonly [string, ErrorKey]> = [
   ["company intro required", "errorIntroRequired"],
   ["invalid membership type", "errorInvalidType"],
   ["name required", "errorNameRequired"],
+  ["company address required", "errorCompanyAddressRequired"],
+  ["company phone required", "errorCompanyPhoneRequired"],
+  ["invalid payment method", "errorPaymentMethod"],
   // Server-side legal gate, and PostgREST's "could not find the function"
   // while the v2 migration is not applied.
   ["legal texts not approved", "errorFormUnavailable"],
@@ -59,7 +65,24 @@ const ALLOWED_DOC_TYPES = new Set([
 ]);
 const MAX_DOC_BYTES = 20 * 1024 * 1024;
 
-const NOTICE_ID = "apply-preview-notice";
+
+/** Radio labels of the payment-intent group (message keys, namespace
+ *  `apply`), in the order of PAYMENT_METHODS. No online payment exists:
+ *  the value only records how the applicant intends to pay after
+ *  approval (bank transfer / cheque / card via the secretariat). */
+const PAYMENT_METHOD_LABEL_KEYS = {
+  bank_transfer: "paymentMethodBankTransfer",
+  cheque: "paymentMethodCheque",
+  credit_card: "paymentMethodCreditCard",
+} as const;
+
+export type ApplyTypeOption = {
+  code: string;
+  label: string;
+  /** Annual fee (numeric column, ≥ 0) or null when the fee is on request. */
+  price_annual: number | null;
+  currency: string | null;
+};
 
 const inputClass =
   "h-11 w-full rounded-md border border-grey-300 bg-white px-4 text-small transition-colors focus:border-sea-600";
@@ -100,18 +123,20 @@ export function ApplyForm({
   policyVersion,
   constitutionHref,
 }: {
-  types: { code: string; label: string }[];
-  /** Approved legal-text versions recorded with each consent; null while
-   *  the texts are unapproved (the page then never renders a live form). */
+  types: ApplyTypeOption[];
+  /** Published policy versions recorded with the consent, byte-identical
+   *  to the stamp the RPC recomputes; null while the policies carry no
+   *  version (the page then never renders a live form). */
   policyVersion: string | null;
   /** Where the constitution text is published (site_settings.legal). */
   constitutionHref: string;
 }) {
   const t = useTranslations("apply");
   const tCommon = useTranslations("common");
+  const tMembership = useTranslations("membership");
   const locale = useLocale();
-  const disabled = submissionsDisabled();
   const [status, setStatus] = useState<Status>("idle");
+  const [typeCode, setTypeCode] = useState("");
   const [errorKey, setErrorKey] = useState<ErrorKey>("errorGeneric");
   const [introZh, setIntroZh] = useState("");
   const [introEn, setIntroEn] = useState("");
@@ -125,6 +150,15 @@ export function ApplyForm({
   const zhMetrics = zhIntroMetrics(introZh);
   const enMetrics = enIntroMetrics(introEn);
   const zh = locale === "zh";
+  // Fee of the selected tier, shown beside the select so the applicant
+  // sees the amount before choosing how to pay (same formatter as the
+  // fee table: A$1,980／年).
+  const selectedType = types.find((type) => type.code === typeCode);
+  const selectedFee = selectedType
+    ? selectedType.price_annual != null
+      ? `${formatFeeAmount(selectedType.price_annual, selectedType.currency)}${tMembership("perYear")}`
+      : tMembership("feeContact")
+    : null;
   const paren = (inner: React.ReactNode) => (
     <>
       {zh ? "（" : " ("}
@@ -139,7 +173,6 @@ export function ApplyForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (disabled) return;
 
     const hasIntro = zhMetrics.count > 0 || enMetrics.count > 0;
     if (!zhMetrics.ok || !enMetrics.ok || !hasIntro) {
@@ -167,8 +200,8 @@ export function ApplyForm({
         p_email: field("email").toLowerCase(),
         p_mobile: field("mobile") || undefined,
         p_company_name: field("company_name"),
-        p_company_address: field("company_address") || undefined,
-        p_company_phone: field("company_phone") || undefined,
+        p_company_address: field("company_address"),
+        p_company_phone: field("company_phone"),
         p_fax: field("fax") || undefined,
         p_position: field("position") || undefined,
         p_company_intro_zh: field("company_intro_zh") || undefined,
@@ -180,6 +213,7 @@ export function ApplyForm({
         p_agreed_marketing: form.get("agreed_marketing") === "on",
         p_policy_version: policyVersion ?? undefined,
         p_locale: locale === "en" ? "en" : "zh",
+        p_payment_method: field("payment_method"),
       },
     );
     if (error || !data) {
@@ -259,22 +293,12 @@ export function ApplyForm({
 
       {!done && (
         <>
-          {disabled && (
-            <div className="mb-8">
-              <PreviewFormNotice id={NOTICE_ID} />
-            </div>
-          )}
           <form
             method="post"
             action=""
             noValidate={false}
             onSubmit={handleSubmit}
-            aria-describedby={disabled ? NOTICE_ID : undefined}
           >
-            <fieldset
-              disabled={disabled}
-              className="contents m-0 min-w-0 border-0 p-0"
-            >
               <div className="space-y-10">
                 <div>
                   <label htmlFor="apply-type" className={labelClass}>
@@ -284,7 +308,9 @@ export function ApplyForm({
                     id="apply-type"
                     name="membership_type_code"
                     required
-                    defaultValue=""
+                    value={typeCode}
+                    onChange={(e) => setTypeCode(e.target.value)}
+                    aria-describedby="apply-type-fee"
                     className={inputClass}
                   >
                     <option value="" disabled>
@@ -296,7 +322,35 @@ export function ApplyForm({
                       </option>
                     ))}
                   </select>
+                  <p
+                    id="apply-type-fee"
+                    aria-live="polite"
+                    className="mt-2 min-h-5 text-caption tabular-nums text-grey-600"
+                  >
+                    {selectedFee ? t("typeFee", { fee: selectedFee }) : ""}
+                  </p>
                 </div>
+
+                <fieldset className="m-0 min-w-0 border-0 p-0">
+                  <legend className={labelClass}>{t("paymentMethod")}</legend>
+                  <p className="mb-3 text-caption text-grey-500">
+                    {t("paymentMethodHint")}
+                  </p>
+                  <div className="space-y-2.5">
+                    {PAYMENT_METHODS.map((method) => (
+                      <label key={method} className={checkClass}>
+                        <input
+                          type="radio"
+                          name="payment_method"
+                          value={method}
+                          required
+                          className={boxClass}
+                        />
+                        {t(PAYMENT_METHOD_LABEL_KEYS[method])}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
 
                 <Section title={t("companySection")}>
                   <div>
@@ -320,6 +374,7 @@ export function ApplyForm({
                       id="apply-company-phone"
                       name="company_phone"
                       type="tel"
+                      required
                       className={inputClass}
                     />
                   </div>
@@ -334,6 +389,7 @@ export function ApplyForm({
                       id="apply-company-address"
                       name="company_address"
                       type="text"
+                      required
                       autoComplete="street-address"
                       className={inputClass}
                     />
@@ -383,7 +439,10 @@ export function ApplyForm({
                   </div>
                   <div>
                     <label htmlFor="apply-position" className={labelClass}>
-                      {t("position")}
+                      {t("position")}{" "}
+                      <span className="font-normal text-grey-500">
+                        ({t("optional")})
+                      </span>
                     </label>
                     <input
                       id="apply-position"
@@ -408,7 +467,10 @@ export function ApplyForm({
                   </div>
                   <div>
                     <label htmlFor="apply-mobile" className={labelClass}>
-                      {t("mobile")}
+                      {t("mobile")}{" "}
+                      <span className="font-normal text-grey-500">
+                        ({t("optional")})
+                      </span>
                     </label>
                     <input
                       id="apply-mobile"
@@ -533,6 +595,9 @@ export function ApplyForm({
                 <Section title={t("consentSection")}>
                   <fieldset className="md:col-span-2 m-0 min-w-0 border-0 p-0">
                     <legend className={labelClass}>{t("directoryTitle")}</legend>
+                    <p className="mb-3 text-small leading-relaxed text-grey-600">
+                      {t("directoryNote")}
+                    </p>
                     <div className="space-y-2.5">
                       <label className={checkClass}>
                         <input
@@ -626,32 +691,25 @@ export function ApplyForm({
                     name="documents"
                     type="file"
                     multiple
-                    disabled={disabled}
                     accept=".pdf,.doc,.docx,image/jpeg,image/png"
-                    aria-describedby={disabled ? undefined : "apply-documents-hint"}
+                    aria-describedby="apply-documents-hint"
                     className="block w-full text-small text-grey-600 file:mr-3 file:h-9 file:rounded-md file:border file:border-grey-300 file:bg-white file:px-4 file:text-small file:font-medium file:text-sea-800 file:transition-colors hover:file:bg-grey-50 disabled:opacity-50"
                   />
-                  {!disabled && (
-                    <p
-                      id="apply-documents-hint"
-                      className="mt-2 text-caption text-grey-500"
-                    >
-                      {t("documentsHint")}
-                    </p>
-                  )}
+                  <p
+                    id="apply-documents-hint"
+                    className="mt-2 text-caption text-grey-500"
+                  >
+                    {t("documentsHint")}
+                  </p>
                 </div>
 
                 <div>
                   <Button
                     type="submit"
-                    disabled={pending || disabled}
+                    disabled={pending}
                     className="w-full md:w-auto"
                   >
-                    {disabled
-                      ? tCommon("previewSubmitDisabled")
-                      : pending
-                        ? tCommon("submitting")
-                        : t("submit")}
+                    {pending ? tCommon("submitting") : t("submit")}
                   </Button>
                   <div aria-live="polite">
                     {status === "error" && (
@@ -662,7 +720,6 @@ export function ApplyForm({
                   </div>
                 </div>
               </div>
-            </fieldset>
           </form>
         </>
       )}

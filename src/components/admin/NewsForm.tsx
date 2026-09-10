@@ -2,7 +2,8 @@
 
 import { FormStatus } from "@/components/admin/Field";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import Image from "next/image";
 import {
   createNews,
   updateNews,
@@ -20,6 +21,21 @@ import type { Tables } from "@/types/database.types";
 
 const initialState: NewsActionState = { status: "idle" };
 
+/** Raster formats the article renderer accepts; mirrored in actions.ts. */
+const IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/avif";
+
+const fileInputClass =
+  "block w-full text-small text-grey-600 file:mr-3 file:h-9 file:rounded-md file:border file:border-grey-300 file:bg-white file:px-4 file:text-small file:font-medium file:text-sea-900 file:transition-colors hover:file:bg-grey-50";
+
+/** A storage object under news/<slug>/ offered for the article body. */
+export type NewsBodyImage = {
+  name: string;
+  /** Storage-relative path, e.g. news/annual-forum-2026/01-photo.jpg. */
+  path: string;
+  /** Public URL for the thumbnail. */
+  url: string;
+};
+
 /** ISO timestamp → value for <input type="datetime-local"> in local time. */
 function toDatetimeLocal(iso: string | null): string {
   if (!iso) return "";
@@ -34,14 +50,31 @@ export function NewsForm({
   chapters,
   initial,
   locale,
+  bodyImages = [],
 }: {
   categories: { id: number; name: string }[];
   /** Active industry chapters; each becomes an industry-tag checkbox. */
   chapters: { slug: string; name: string }[];
   initial: Tables<"news"> | null;
   locale: string;
+  /** Existing objects under news/<slug>/ (edit page only). */
+  bodyImages?: NewsBodyImage[];
 }) {
   const zh = locale === "zh";
+  const imageSlug = initial?.slug ?? "<slug>";
+  const bodyHint = zh
+    ? `支持 Markdown 格式；插图单独成段：![说明](news/${imageSlug}/01.jpg)`
+    : `Markdown supported; images as their own paragraph: ![caption](news/${imageSlug}/01.jpg)`;
+  const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  async function copySnippet(path: string) {
+    try {
+      await navigator.clipboard.writeText(`![](${path})`);
+      setCopiedPath(path);
+      window.setTimeout(() => setCopiedPath(null), 2000);
+    } catch {
+      // Clipboard unavailable — the snippet is still selectable text.
+    }
+  }
   const selectedTags = new Set(initial?.tags ?? []);
   // Tags that no longer match an active chapter stay visible so an editor
   // can deliberately remove them instead of losing them on save.
@@ -133,7 +166,7 @@ export function NewsForm({
         <Field
           label={zh ? "正文 中文" : "Body 中文"}
           htmlFor="news-body-zh"
-          hint={zh ? "支持 Markdown 格式" : "Markdown supported"}
+          hint={bodyHint}
         >
           <TextArea
             id="news-body-zh"
@@ -146,7 +179,7 @@ export function NewsForm({
         <Field
           label={zh ? "正文 EN" : "Body EN"}
           htmlFor="news-body-en"
-          hint={zh ? "支持 Markdown 格式" : "Markdown supported"}
+          hint={bodyHint}
         >
           <TextArea
             id="news-body-en"
@@ -260,13 +293,21 @@ export function NewsForm({
         </div>
 
         <div className="md:col-span-2">
-          <Field label={zh ? "封面图片" : "Cover image"} htmlFor="news-cover-image">
+          <Field
+            label={zh ? "封面图片" : "Cover image"}
+            htmlFor="news-cover-image"
+            hint={
+              zh
+                ? "JPEG / PNG / WebP / AVIF，最大 10 MiB"
+                : "JPEG / PNG / WebP / AVIF, up to 10 MiB"
+            }
+          >
             <input
               id="news-cover-image"
               name="cover_image"
               type="file"
-              accept="image/*"
-              className="block w-full text-small text-grey-600 file:mr-3 file:h-9 file:rounded-md file:border file:border-grey-300 file:bg-white file:px-4 file:text-small file:font-medium file:text-sea-900 file:transition-colors hover:file:bg-grey-50"
+              accept={IMAGE_ACCEPT}
+              className={fileInputClass}
             />
           </Field>
           {initial?.cover_image_path && (
@@ -275,6 +316,27 @@ export function NewsForm({
               {initial.cover_image_path}
             </p>
           )}
+        </div>
+
+        <div className="md:col-span-2">
+          <Field
+            label={zh ? "正文图片" : "Body images"}
+            htmlFor="news-body-images"
+            hint={
+              zh
+                ? `JPEG / PNG / WebP / AVIF，每张最大 10 MiB。保存后按顺序存入 news/${imageSlug}/，再从“文章图片”面板复制引用语法粘贴到正文。`
+                : `JPEG / PNG / WebP / AVIF, up to 10 MiB each. Saved in order under news/${imageSlug}/; copy the snippet from the Article images panel into the body.`
+            }
+          >
+            <input
+              id="news-body-images"
+              name="body_images"
+              type="file"
+              multiple
+              accept={IMAGE_ACCEPT}
+              className={fileInputClass}
+            />
+          </Field>
         </div>
 
         <div className="md:col-span-2">
@@ -294,6 +356,71 @@ export function NewsForm({
           <FormStatus state={state} className="mt-3" />
         </div>
       </form>
+
+      {initial && (
+        <section
+          aria-labelledby="news-body-images-title"
+          className="mt-10 border-t border-grey-300 pt-6"
+        >
+          <h2
+            id="news-body-images-title"
+            className="text-small font-medium text-ink"
+          >
+            {zh ? "文章图片" : "Article images"}
+          </h2>
+          <p className="mt-1.5 text-caption text-grey-500">
+            {zh
+              ? "把引用语法单独粘贴为正文的一段；方括号内可填写图片说明。"
+              : "Paste a snippet into the body as its own paragraph; a caption goes inside the square brackets."}
+          </p>
+          {bodyImages.length === 0 ? (
+            <p className="mt-4 text-small text-grey-500">
+              {zh ? "暂无正文图片。" : "No article images yet."}
+            </p>
+          ) : (
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+              {bodyImages.map((image) => (
+                <li
+                  key={image.path}
+                  className="flex gap-3 rounded-md border border-grey-300 p-3"
+                >
+                  <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded bg-sea-50">
+                    <Image
+                      src={image.url}
+                      alt=""
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-caption text-grey-600">
+                      {image.name}
+                    </p>
+                    <code className="mt-1 block break-all text-caption text-ink">
+                      {`![](${image.path})`}
+                    </code>
+                    <AdminButton
+                      type="button"
+                      variant="quiet"
+                      onClick={() => copySnippet(image.path)}
+                      className="mt-2 h-8 px-3"
+                    >
+                      {copiedPath === image.path
+                        ? zh
+                          ? "已复制"
+                          : "Copied"
+                        : zh
+                          ? "复制引用"
+                          : "Copy snippet"}
+                    </AdminButton>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {initial && (
         <form

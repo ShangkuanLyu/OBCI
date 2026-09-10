@@ -5,7 +5,6 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/seo";
-import { isPreviewDeployment } from "@/lib/preview";
 import { JsonLd, organizationJsonLd } from "@/components/seo/JsonLd";
 import "../globals.css";
 
@@ -23,19 +22,15 @@ export async function generateMetadata({
   const zh = locale === "zh";
   return {
     metadataBase: new URL(siteUrl()),
-    // The isolated review deployment must never be indexed.
-    ...(isPreviewDeployment()
-      ? { robots: { index: false, follow: false } }
-      : {}),
     title: {
       default: zh
-        ? "大洋洲工商协会 OBAI | Oceania Business Association"
-        : "Oceania Business Association (OBAI) | 大洋洲工商协会",
-      template: "%s | OBAI",
+        ? "大洋洲工商业委员会 OBCI | Oceania Business Council"
+        : "Oceania Business Council (OBCI) | 大洋洲工商业委员会",
+      template: "%s | OBCI",
     },
     description: zh
-      ? "大洋洲工商协会（OBAI）——搭建中澳及大洋洲多边商业互通枢纽，赋能中国企业轻资产出海、澳洲企业拓展亚太市场。"
-      : "Oceania Business Association (OBAI) — a multilateral business hub linking China, Australia and Oceania, enabling Chinese enterprises to go global asset-light and Australian businesses to expand into the Asia-Pacific.",
+      ? "大洋洲工商业委员会（OBCI）——搭建中澳及大洋洲多边商业互通枢纽，赋能中国企业轻资产出海、澳洲企业拓展亚太市场。"
+      : "Oceania Business Council (OBCI) — a multilateral business hub linking China, Australia and Oceania, enabling Chinese enterprises to go global asset-light and Australian businesses to expand into the Asia-Pacific.",
   };
 }
 
@@ -60,7 +55,6 @@ export default async function LocaleLayout({
     <html
       lang={locale}
       className={`${geistSans.variable} antialiased`}
-      data-preview={isPreviewDeployment() ? "" : undefined}
       // data-js is added by the inline script below before hydration.
       suppressHydrationWarning
     >

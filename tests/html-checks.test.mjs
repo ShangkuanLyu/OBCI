@@ -1,5 +1,5 @@
 // Regression tests for the static-output template-variable scan
-// (scripts/lib/html-checks.mjs). The 2026-09-02 preview shipped
+// (scripts/lib/html-checks.mjs). A 2026-09-02 build shipped
 // "{count}大行业分会" in twelve chapter meta descriptions while the old
 // checker reported "no placeholders" — every surface it missed is covered.
 import { test, describe } from "node:test";
@@ -17,7 +17,7 @@ const wheres = (html) => findUnresolvedPlaceholders(html).map((h) => h.where);
 
 describe("unresolved template variables are found in every surface", () => {
   test("<title>", () => {
-    const html = page({ head: "<title>{count}大行业分会 | OBAI</title>" });
+    const html = page({ head: "<title>{count}大行业分会 | OBCI</title>" });
     const hits = findUnresolvedPlaceholders(html);
     assert.ok(hits.some((h) => h.where === "title" && h.match === "{count}"));
   });
@@ -45,7 +45,7 @@ describe("unresolved template variables are found in every surface", () => {
         JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Organization",
-          name: "OBAI",
+          name: "OBCI",
           description: "{count} industry chapters",
           nested: { list: ["ok", "{name} chapter"] },
         }) +
@@ -118,11 +118,11 @@ describe("legitimate braces are not flagged", () => {
   test("a clean rendered page passes", () => {
     const html = page({
       head:
-        "<title>六大行业分会 | OBAI</title>" +
-        '<meta name="description" content="六大行业分会，以赛道为纽带精准对接资源。"/>' +
-        '<meta property="og:title" content="六大行业分会"/>' +
-        '<script type="application/ld+json">{"@type":"WebPage","name":"六大行业分会"}</script>',
-      body: "<h1>六大行业分会</h1><p>Six industry chapters</p>",
+        "<title>九大专业分会 | OBCI</title>" +
+        '<meta name="description" content="九大专业分会，以赛道为纽带精准对接资源。"/>' +
+        '<meta property="og:title" content="九大专业分会"/>' +
+        '<script type="application/ld+json">{"@type":"WebPage","name":"九大专业分会"}</script>',
+      body: "<h1>九大专业分会</h1><p>Nine professional committees</p>",
     });
     assert.deepEqual(findUnresolvedPlaceholders(html), []);
   });
@@ -142,11 +142,10 @@ describe("scripts/check-static-output.mjs gates the build", async () => {
   const { spawnSync } = await import("node:child_process");
   const script = new URL("../scripts/check-static-output.mjs", import.meta.url).pathname;
 
-  // A minimal page that satisfies every preview rule.
+  // A minimal page that satisfies every rule the checker enforces.
   const cleanPage = (description) =>
-    `<!DOCTYPE html><html lang="zh"><head><title>行业分会 | OBAI</title>` +
+    `<!DOCTYPE html><html lang="zh"><head><title>行业分会 | OBCI</title>` +
     `<meta name="description" content="${description}"/>` +
-    `<meta name="robots" content="noindex, nofollow"/>` +
     `<link rel="canonical" href="https://example.test/zh/x/"/>` +
     `<link rel="alternate" hreflang="zh" href="https://example.test/zh/x/"/>` +
     `<link rel="alternate" hreflang="en" href="https://example.test/en/x/"/>` +
@@ -154,17 +153,17 @@ describe("scripts/check-static-output.mjs gates the build", async () => {
     `<meta property="og:image" content="https://example.test/og.png"/>` +
     `<meta name="twitter:image" content="https://example.test/og.png"/>` +
     `<script type="application/ld+json">{"@type":"WebPage","name":"x"}</script>` +
-    `</head><body><p>商会审查预览</p><h1>行业分会</h1></body></html>`;
+    `</head><body><h1>行业分会</h1></body></html>`;
 
   const run = (dir) =>
-    spawnSync(process.execPath, [script, dir, "--preview"], { encoding: "utf8" });
+    spawnSync(process.execPath, [script, dir], { encoding: "utf8" });
 
   test("exit 1 with a named surface when a page leaks {count}; exit 0 when clean", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "obai-static-check-"));
+    const dir = await mkdtemp(join(tmpdir(), "obci-static-check-"));
     try {
       await mkdir(join(dir, "zh/chapters/x"), { recursive: true });
       await mkdir(join(dir, "zh/ok"), { recursive: true });
-      await writeFile(join(dir, "zh/ok/index.html"), cleanPage("六大行业分会。"));
+      await writeFile(join(dir, "zh/ok/index.html"), cleanPage("九大专业分会。"));
       await writeFile(join(dir, "zh/chapters/x/index.html"), cleanPage("{count}大行业分会。"));
 
       const failing = run(dir);

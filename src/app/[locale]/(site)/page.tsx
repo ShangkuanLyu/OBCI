@@ -13,8 +13,7 @@ import { getContentBlocks } from "@/services/content";
 import { getServiceOfferings } from "@/services/abs";
 import { getSiteSettings } from "@/services/settings";
 import { isModuleConfirmed } from "@/lib/review";
-import { isLegacyNewsCategory, newsCategoryName } from "@/lib/news/categories";
-import { designFixturesEnabled } from "@/lib/fixtures/design-review";
+import { newsCategoryName } from "@/lib/news/categories";
 import { loc, formatDate, imageUrl, melbourneDay, mediaUrl } from "@/lib/utils/l10n";
 import { countWord } from "@/lib/utils/count-word";
 import { pageMetadata } from "@/lib/seo";
@@ -34,8 +33,8 @@ export async function generateMetadata({
     locale,
     path: "/",
     title: zh
-      ? "大洋洲工商协会 OBAI"
-      : "Oceania Business Association (OBAI)",
+      ? "大洋洲工商业委员会 OBCI"
+      : "Oceania Business Council (OBCI)",
     description: zh
       ? "搭建中澳及大洋洲多边商业互通枢纽，赋能中国企业轻资产出海、澳洲企业拓展亚太市场。"
       : "A multilateral business hub linking China, Australia and Oceania — empowering cross-border growth with end-to-end compliant delivery.",
@@ -44,8 +43,8 @@ export async function generateMetadata({
     ...meta,
     title: {
       absolute: zh
-        ? "大洋洲工商协会 OBAI | Oceania Business Association"
-        : "Oceania Business Association (OBAI) | 大洋洲工商协会",
+        ? "大洋洲工商业委员会 OBCI | Oceania Business Council"
+        : "Oceania Business Council (OBCI) | 大洋洲工商业委员会",
     },
   };
 }
@@ -63,7 +62,6 @@ export default async function HomePage({
   const tEvents = await getTranslations("events");
   const tMembership = await getTranslations("membership");
   const tLeadership = await getTranslations("leadership");
-  const tNews = await getTranslations("news");
 
   const [content, abs, news, upcoming, past, chapters, leadership, settings] =
     await Promise.all([
@@ -85,8 +83,9 @@ export default async function HomePage({
   const pick = (row: { text_zh: string; text_en: string }) =>
     zh ? row.text_zh || row.text_en : row.text_en || row.text_zh;
 
+  // Honorary Patrons (荣誉主席与荣誉顾问): the 2026 "honorary" group.
   const honoraryAdvisers = leadership.filter(
-    (person) => person.group_key === "honorary_chairman",
+    (person) => person.group_key === "honorary",
   );
 
   return (
@@ -99,7 +98,7 @@ export default async function HomePage({
           <Container className="pb-20 pt-16 md:pb-24 md:pt-24">
             <p className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.06em] text-sea-200">
               <span className="h-0.5 w-6 rounded-full bg-gold-500" aria-hidden />
-              <span lang={locale === "zh" ? "en" : "zh"}>{tCommon("orgNameEn")}</span>
+              <span lang={locale === "zh" ? "en" : undefined}>{tCommon("orgNameEn")}</span>
             </p>
             <h1 className="mt-5 max-w-[16em] text-[2rem] font-semibold leading-[1.2] tracking-[-0.02em] md:text-[2.9rem] md:leading-[1.16]">
               {t("heroTitle")}
@@ -283,7 +282,7 @@ export default async function HomePage({
             </div>
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               {news.map((article, i) => {
-                const cover = mediaUrl(article.cover_image_path);
+                const cover = imageUrl(article.cover_image_path);
                 return (
                   <Reveal key={article.id} as="article" delay={i * 80}>
                     <Link
@@ -304,19 +303,8 @@ export default async function HomePage({
                       <div className="p-6">
                         <p className="flex items-center gap-3 text-caption">
                           {article.category && (
-                            <span
-                              className={
-                                isLegacyNewsCategory(article.category, designFixturesEnabled())
-                                  ? "rounded-full border border-dashed border-grey-300 px-2.5 py-1 font-medium text-grey-600"
-                                  : "rounded-full bg-sea-50 px-2.5 py-1 font-medium text-sea-800"
-                              }
-                            >
-                              {newsCategoryName(article.category, locale, designFixturesEnabled())}
-                              {isLegacyNewsCategory(article.category, designFixturesEnabled()) && (
-                                <span className="ml-1.5 font-normal text-grey-500">
-                                  · {tNews("legacyCategory")}
-                                </span>
-                              )}
+                            <span className="rounded-full bg-sea-50 px-2.5 py-1 font-medium text-sea-800">
+                              {newsCategoryName(article.category, locale)}
                             </span>
                           )}
                           <span className="text-grey-500">

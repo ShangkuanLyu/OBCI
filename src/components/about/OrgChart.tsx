@@ -2,7 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/cn";
 import { loc } from "@/lib/utils/l10n";
 import type { ChapterRow } from "@/services/organisation";
-import type { OrgUnit } from "@/lib/fixtures/design-review";
+import type { OrgUnit } from "@/lib/content/types";
 import type { Locale } from "@/i18n/routing";
 
 /* Single-row chart: the connector bar spans from the first to the last

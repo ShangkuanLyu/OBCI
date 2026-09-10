@@ -3,7 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { getPublishedNews } from "@/services/news";
 import { getPastEvents, getUpcomingEvents } from "@/services/events";
 import { loc, mediaUrl } from "@/lib/utils/l10n";
-import type { GalleryItem } from "@/lib/fixtures/design-review";
+import type { GalleryItem } from "@/lib/content/types";
 import type { Locale } from "@/i18n/routing";
 
 export type ResolvedGalleryItem = {

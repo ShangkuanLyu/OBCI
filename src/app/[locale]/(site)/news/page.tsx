@@ -3,7 +3,6 @@ import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { NewsletterForm } from "@/components/forms/NewsletterForm";
 import { NewsIndex, type NewsListItem } from "@/components/news/NewsIndex";
-import { ReviewNote } from "@/components/ui/ReviewNote";
 import { getNewsCategories, getPublishedNews } from "@/services/news";
 import { getChapters } from "@/services/organisation";
 import { categoryOptions, tagOptions } from "@/lib/news/filter";
@@ -12,11 +11,7 @@ import {
   newsCategoryName,
   resolveNewsCategories,
 } from "@/lib/news/categories";
-import {
-  designFixturesEnabled,
-  fixtureNewsTags,
-} from "@/lib/fixtures/design-review";
-import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
+import { loc, formatDate, imageUrl } from "@/lib/utils/l10n";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
 import type { Metadata } from "next";
@@ -55,16 +50,10 @@ export default async function NewsIndexPage({
     getChapters().catch(() => []),
   ]);
 
-  // Preview build: the health articles carry their chapter tags from the
-  // fixture map until the approved data update tags the rows themselves.
-  const fixtures = designFixturesEnabled();
-  // Category structure: the five DOCX first-level categories are always
-  // offered (preview enforces them; production reads the CMS rows, whose
-  // is_active flag marks legacy categories). Articles in a legacy category
-  // stay listed under "全部", marked "历史分类待整理".
-  const resolvedCategories = resolveNewsCategories(categories, {
-    enforceDocx: fixtures,
-  });
+  // Category structure comes from the CMS rows: `is_active` decides which
+  // are offered as tabs. An article in a legacy category is not dropped —
+  // it simply stays listed under "全部".
+  const resolvedCategories = resolveNewsCategories(categories);
   // Per-article name/legacy flag come from the article's own embedded
   // category row — the same call the article page and the home page make.
   const items: NewsListItem[] = articles.map((article) => ({
@@ -72,24 +61,22 @@ export default async function NewsIndexPage({
     slug: article.slug,
     title: loc(article, "title", locale),
     summary: loc(article, "summary", locale),
-    date: formatDate(article.published_at, locale),
+    date: article.published_at
+      ? formatDate(article.published_at, locale)
+      : "",
     categorySlug: article.category?.slug ?? null,
     categoryName: article.category
-      ? newsCategoryName(article.category, locale, fixtures)
+      ? newsCategoryName(article.category, locale)
       : "",
-    categoryLegacy: isLegacyNewsCategory(article.category, fixtures),
-    image: mediaUrl(article.cover_image_path),
+    categoryLegacy: isLegacyNewsCategory(article.category),
+    image: imageUrl(article.cover_image_path),
     featured: article.is_featured,
-    tags: fixtures
-      ? Array.from(
-          new Set([...(article.tags ?? []), ...fixtureNewsTags(article.slug)]),
-        )
-      : (article.tags ?? []),
+    tags: article.tags ?? [],
   }));
   const categoryItems = categoryOptions(
     resolvedCategories.map((category) => ({
       slug: category.slug,
-      name: newsCategoryName(category, locale, false),
+      name: newsCategoryName(category, locale),
       legacy: category.legacy,
     })),
     items,
@@ -108,10 +95,6 @@ export default async function NewsIndexPage({
 
       <section className="bg-white py-16 md:py-24">
         <Container>
-          {/* Fixture-only chapter tags are a demonstration association. */}
-          {fixtures && tagItems.length > 0 && (
-            <ReviewNote className="mb-8">{t("demoTagsNote")}</ReviewNote>
-          )}
           <NewsIndex
             items={items}
             categories={categoryItems}

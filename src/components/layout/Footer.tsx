@@ -1,12 +1,9 @@
+import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { assetPath } from "@/lib/utils/asset";
 import { getSiteSettings, settingString } from "@/services/settings";
-import {
-  contactFieldState,
-  contactHasPendingFields,
-  type ContactField,
-} from "@/lib/review";
-import { isInternalReview, isPreviewDeployment } from "@/lib/preview";
+import { contactFieldState, type ContactField } from "@/lib/review";
 
 export async function Footer() {
   const t = await getTranslations("footer");
@@ -16,56 +13,44 @@ export async function Footer() {
   const settings = await getSiteSettings().catch(() => ({}));
   const zh = locale === "zh";
 
-  // Contact details are published only once the chamber confirms them
-  // (site_settings.contact.confirmed_fields). The local internal-review
-  // build shows unconfirmed values with a "pending" marker; production and
-  // the public preview never render them.
+  // Contact details are published only where the CMS lists the field in
+  // site_settings.contact.confirmed_fields; anything else is not rendered.
   const contact = (field: ContactField, key: string) => {
-    const state = contactFieldState(settings, field);
     const value =
-      state === "hidden" ? "" : settingString(settings, "contact", key, "");
-    return { value, pending: state === "pending" && value !== "" };
+      contactFieldState(settings, field) === "hidden"
+        ? ""
+        : settingString(settings, "contact", key, "");
+    return { value };
   };
   const address = contact("address", zh ? "address_zh" : "address_en");
   const phone = contact("phone", "phone");
   const email = contact("email", "email");
   const wechat = contact("wechat", zh ? "wechat_zh" : "wechat_en");
-  const rows = [address, phone, email, wechat].filter((row) => row.value);
-  const pending = contactHasPendingFields(settings, [
-    "address",
-    "phone",
-    "email",
-    "wechat",
-  ]);
-
-  const pendingBadge = (
-    <span className="ml-2 rounded-full border border-white/30 px-2 py-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-white/70">
-      {tCommon("pendingConfirmation")}
-    </span>
-  );
 
   return (
     <footer className="bg-sea-900 text-white">
       <div className="mx-auto w-full max-w-[69.5rem] px-6 py-16 md:px-10 md:py-20">
         <div className="grid gap-12 md:grid-cols-12">
           <div className="md:col-span-5">
-            {/* Interim text wordmark — replaced once the official OBAI logo
-               artwork is supplied. */}
-            <p className="flex items-baseline gap-3">
-              <span className="text-h3 font-semibold tracking-[0.02em] text-white">
-                OBAI
+            {/* The lockup is dark ink on transparent, so on the navy footer
+               it sits on a small white panel. */}
+            <p className="flex items-center gap-4">
+              <span className="inline-flex shrink-0 items-center rounded-lg bg-white px-3 py-2">
+                <Image
+                  src={assetPath("/brand/logo-lockup.png")}
+                  alt={tCommon("orgName")}
+                  width={66}
+                  height={36}
+                  className="h-9 w-auto"
+                />
               </span>
-              <span className="border-l border-white/25 pl-3 text-small text-white/80">
-                {tCommon("orgName")}
+              <span className="text-small font-medium leading-snug text-white">
+                {tCommon("orgNameFull")}
               </span>
             </p>
-            <p
-              lang={zh ? "en" : "zh"}
-              className="mt-4 text-caption tracking-[0.06em] text-white/50"
-            >
-              {zh
-                ? "OCEANIA BUSINESS ASSOCIATION INCORPORATED"
-                : "大洋洲工商协会"}
+            {/* Legal caption: incorporated name and registration number. */}
+            <p className="mt-4 text-caption tracking-[0.02em] text-white/50">
+              {tCommon("legalName")} · {tCommon("registrationNo")}
             </p>
             <p className="mt-5 max-w-[26rem] text-small leading-relaxed text-white/70">
               {t("mission")}
@@ -104,13 +89,11 @@ export async function Footer() {
               {address.value && (
                 <li>
                   {address.value}
-                  {address.pending && pendingBadge}
                 </li>
               )}
               {phone.value && (
                 <li>
                   {phone.value}
-                  {phone.pending && pendingBadge}
                 </li>
               )}
               {email.value && (
@@ -121,26 +104,14 @@ export async function Footer() {
                   >
                     {email.value}
                   </a>
-                  {email.pending && pendingBadge}
                 </li>
               )}
               {wechat.value && (
                 <li>
                   {wechat.value}
-                  {wechat.pending && pendingBadge}
-                </li>
-              )}
-              {rows.length === 0 && pending && isPreviewDeployment() && (
-                <li className="text-caption text-white/50">
-                  {t("contactPending")}
                 </li>
               )}
             </ul>
-            {pending && isInternalReview() && (
-              <p className="mt-4 text-caption leading-relaxed text-white/50">
-                {tCommon("internalReviewOnly")}
-              </p>
-            )}
           </div>
         </div>
 
@@ -152,11 +123,6 @@ export async function Footer() {
             <Link className="transition-colors hover:text-white" href="/accessibility">{t("accessibility")}</Link>
           </nav>
         </div>
-        {isPreviewDeployment() && (
-          <p className="mt-6 text-caption text-white/50">
-            {tCommon("previewBanner")}
-          </p>
-        )}
       </div>
     </footer>
   );

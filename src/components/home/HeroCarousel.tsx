@@ -12,7 +12,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/cn";
 import { mediaUrl } from "@/lib/utils/l10n";
-import type { BannerData } from "@/lib/fixtures/design-review";
+import type { BannerData } from "@/lib/content/types";
 
 const AUTOPLAY_MS = 7000;
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
@@ -124,7 +124,7 @@ export function HeroCarousel({ banners }: { banners: BannerData[] }) {
                     className="h-0.5 w-6 rounded-full bg-gold-500"
                     aria-hidden
                   />
-                  <span lang={zh ? "en" : "zh"}>{tCommon("orgNameEn")}</span>
+                  <span lang={zh ? "en" : undefined}>{tCommon("orgNameEn")}</span>
                 </p>
                 {/* One <h1> per page: only the first slide's title is the
                     page heading; later slides carry the same styling. */}

@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils/cn";
-import { isPreviewDeployment } from "@/lib/preview";
-import { PreviewBanner } from "@/components/layout/PreviewBanner";
 
 /* Navigation order fixed by the redesign brief:
-   Home · About OBAI · Industry Chapters · Member Services ·
-   News & Insights · Events · Contact Us, plus the Join OBAI CTA. */
+   Home · About us · Committees · Member Services ·
+   News & Insights · Events · Contact Us, plus the Join OBCI CTA. */
 const NAV_ITEMS = [
   { key: "home", href: "/" },
   { key: "about", href: "/about" },
@@ -25,33 +24,45 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/**
- * Text wordmark. Interim brand treatment: the association has not yet
- * supplied an official OBAI logo, so the header carries a typographic
- * lockup only — deliberately not presented as a designed logo.
- */
-function Wordmark({ locale }: { locale: string }) {
+/** Official logo lockup (public/brand/logo-lockup.png, 480×263: blue
+ *  "OB" mark + "OCEANIA BUSINESS COUNCIL"), 44px tall. On the Chinese
+ *  locale the Chinese name sits beside it; it is hidden on very narrow
+ *  screens so the nav controls keep their room. */
+const LOGO_WIDTH = 80;
+const LOGO_HEIGHT = 44;
+
+function Logo({
+  src,
+  alt,
+  label,
+}: {
+  src: string;
+  alt: string;
+  label?: string;
+}) {
   return (
-    <span className="flex items-baseline gap-3">
-      <span className="text-[1.35rem] font-semibold tracking-[0.02em] text-sea-800">
-        OBAI
-      </span>
-      <span className="hidden border-l border-grey-300 pl-3 text-[0.8125rem] leading-snug text-grey-600 min-[420px]:block lg:hidden min-[1200px]:block">
-        {locale === "zh" ? (
-          "大洋洲工商协会"
-        ) : (
-          <>
-            Oceania Business
-            <br />
-            Association
-          </>
-        )}
-      </span>
+    <span className="flex items-center gap-3">
+      <Image
+        src={src}
+        alt={alt}
+        width={LOGO_WIDTH}
+        height={LOGO_HEIGHT}
+        priority
+        className="h-11 w-auto"
+      />
+      {label && (
+        <span
+          aria-hidden
+          className="hidden border-l border-grey-300 pl-3 text-[0.8125rem] font-medium leading-snug tracking-[0.02em] text-sea-800 min-[420px]:block"
+        >
+          {label}
+        </span>
+      )}
     </span>
   );
 }
 
-export function Header() {
+export function Header({ logoSrc }: { logoSrc: string }) {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
   const locale = useLocale();
@@ -61,11 +72,9 @@ export function Header() {
   const headerRef = useRef<HTMLElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const preview = isPreviewDeployment();
 
   // Lock scroll while the mobile sheet is open, and anchor the sheet to
-  // the bottom of the sticky header block (banner + bar) rather than a
-  // hard-coded height.
+  // the bottom of the sticky header rather than a hard-coded height.
   useEffect(() => {
     document.documentElement.style.overflow = open ? "hidden" : "";
     if (open && headerRef.current) {
@@ -119,19 +128,17 @@ export function Header() {
         ref={headerRef}
         className="sticky top-0 z-50 border-b border-grey-100 bg-white/95 backdrop-blur"
       >
-        {preview && (
-          <PreviewBanner
-            badge={tCommon("previewBadge")}
-            text={tCommon("previewBanner")}
-          />
-        )}
         <div className="mx-auto flex h-16 w-full max-w-[69.5rem] items-center justify-between px-6 md:px-10">
           <Link
             href="/"
             className="flex items-center"
-            aria-label={locale === "zh" ? "大洋洲工商协会 OBAI 首页" : "OBAI home"}
+            aria-label={t("homeLink", { name: tCommon("orgName") })}
           >
-            <Wordmark locale={locale} />
+            <Logo
+              src={logoSrc}
+              alt={tCommon("orgName")}
+              label={locale === "zh" ? tCommon("orgName") : undefined}
+            />
           </Link>
 
           {/* Desktop navigation */}

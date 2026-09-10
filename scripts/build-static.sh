@@ -1,14 +1,10 @@
 #!/bin/bash
-# Builds the GitHub-Pages-style static export locally, exactly as the
-# workflows do (strip server-only parts → next build with STATIC_EXPORT),
-# and stages the result for scripts/pages-preview-server.mjs.
+# Builds the GitHub-Pages static export locally, exactly as the deploy
+# workflow does (strip server-only parts → next build with STATIC_EXPORT →
+# static-output check), and stages the result for scripts/pages-preview-server.mjs
+# so the production-shaped site can be browsed at http://localhost:4173/OBCI/.
 #
-# Two modes:
-#   scripts/build-static-preview.sh            # production-shaped build (no flags)
-#   PREVIEW=1 scripts/build-static-preview.sh  # LOCAL internal review: NEXT_PUBLIC_PREVIEW_DEPLOYMENT=1
-#                                              # + NEXT_PUBLIC_DESIGN_FIXTURES=1 (same as OBCI-preview)
-#                                              # + NEXT_PUBLIC_INTERNAL_REVIEW=1 (unconfirmed contact
-#                                              #   details shown with a "pending" marker; never deployed)
+#   scripts/build-static.sh
 #
 # The repo working tree is never modified: sources are rsynced to a scratch
 # copy (node_modules hard-linked — Turbopack rejects symlinks). Read-only
@@ -30,7 +26,9 @@ cp -al "$REPO/node_modules" "$WORK/node_modules"
 
 cd "$WORK"
 
-# CI strip step (verbatim from .github/workflows/deploy-pages.yml)
+# CI strip step (verbatim from .github/workflows/deploy-pages.yml): the admin
+# CMS, auth and the Stripe webhook need a Node host and cannot be exported.
+# public/news-media and public/portraits are site assets and stay.
 rm -f src/proxy.ts
 rm -rf src/app/api src/app/actions
 rm -rf "src/app/[locale]/admin" "src/app/[locale]/(site)/login"
@@ -44,13 +42,6 @@ rm -f .env.local
 export STATIC_EXPORT="1"
 export NEXT_PUBLIC_BASE_PATH="$BASE"
 export NEXT_PUBLIC_SITE_URL="$SITE_URL"
-if [ "${PREVIEW:-0}" = "1" ]; then
-  export NEXT_PUBLIC_PREVIEW_DEPLOYMENT="1"
-  export NEXT_PUBLIC_DESIGN_FIXTURES="1"
-  export NEXT_PUBLIC_INTERNAL_REVIEW="${INTERNAL_REVIEW:-1}"
-else
-  unset NEXT_PUBLIC_PREVIEW_DEPLOYMENT NEXT_PUBLIC_DESIGN_FIXTURES NEXT_PUBLIC_INTERNAL_REVIEW
-fi
 
 npm run build
 
@@ -63,21 +54,17 @@ cat > out/index.html <<HTML
     <meta charset="utf-8" />
     <meta http-equiv="refresh" content="0; url=${BASE}/zh/" />
     <link rel="canonical" href="${SITE_URL}/zh/" />
-    <title>大洋洲工商协会 OBAI</title>
+    <title>大洋洲工商业委员会 OBCI</title>
   </head>
   <body><a href="${BASE}/zh/">进入网站 / Enter site</a></body>
 </html>
 HTML
 
 # Fail the build on unresolved template variables ({count} …) in titles,
-# meta/OG/JSON-LD or visible markup, heading/metadata defects and — in
-# preview mode — any enabled form. Same checker as the Pages workflow.
-if [ "${PREVIEW:-0}" = "1" ]; then
-  node scripts/check-static-output.mjs out --preview
-else
-  node scripts/check-static-output.mjs out
-fi
+# meta/OG/JSON-LD or visible markup, and on heading/metadata/robots defects.
+# Same checker as the Pages workflow.
+node scripts/check-static-output.mjs out
 
 rm -rf "$OUT"
 mv out "$OUT"
-echo "static site staged at $OUT (base path $BASE, preview=${PREVIEW:-0})"
+echo "static site staged at $OUT (base path $BASE)"

@@ -3,8 +3,8 @@ import { Container } from "@/components/ui/Container";
 
 /**
  * Standard interior-page hero: light sea band, gold-ruled eyebrow, ink
- * title. When no label is given, the eyebrow falls back to the
- * cross-language organisation name (the site's identity device).
+ * title. When no label is given, the eyebrow falls back to the English
+ * brand name (the site's identity device).
  */
 export async function PageHero({
   label,
@@ -20,8 +20,8 @@ export async function PageHero({
     getTranslations("common"),
   ]);
   const eyebrow = label ?? tCommon("orgNameEn");
-  // orgNameEn is deliberately the other language of the pair.
-  const eyebrowLang = label ? undefined : locale === "zh" ? "en" : "zh";
+  // orgNameEn is English on both locales; mark it only on Chinese pages.
+  const eyebrowLang = label ? undefined : locale === "zh" ? "en" : undefined;
   return (
     <section className="border-b border-grey-100 bg-sea-50">
       <Container className="pb-12 pt-12 md:pb-16 md:pt-16">

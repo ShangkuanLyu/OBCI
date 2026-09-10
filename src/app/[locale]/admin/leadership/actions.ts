@@ -8,12 +8,16 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { status: "idle" | "error"; message?: string };
 
+/** Mirrors the leadership.group_key CHECK (20260902120000): the three 2026
+ *  public groups plus the legacy keys. */
 const GROUP_KEYS = [
+  "executive",
+  "honorary",
+  "secretariat",
   "president",
   "honorary_chairman",
   "vice_chair",
   "advisor",
-  "secretariat",
 ] as const;
 
 const leadershipSchema = z.object({

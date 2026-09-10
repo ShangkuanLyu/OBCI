@@ -8,7 +8,6 @@ import { getChapters } from "@/services/organisation";
 import { getSiteSettings } from "@/services/settings";
 import { routing } from "@/i18n/routing";
 import { absoluteUrl } from "@/lib/seo";
-import { isPreviewDeployment } from "@/lib/preview";
 import { LEGAL_DOCUMENTS, legalDocumentVersion } from "@/lib/review";
 
 const STATIC_ROUTES = [
@@ -26,9 +25,6 @@ const STATIC_ROUTES = [
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // The isolated review deployment advertises nothing to crawlers.
-  if (isPreviewDeployment()) return [];
-
   const [newsSlugs, eventSlugs, chapters, news, upcoming, past, settings] =
     await Promise.all([
       getAllNewsSlugs().catch(() => []),
@@ -40,9 +36,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       getSiteSettings().catch(() => ({})),
     ]);
 
-  // Legal pages are advertised only once the chamber has approved the
-  // text (legal.<doc>_version); unapproved pages are noindex placeholders.
-  // Each document's route path is its document key.
+  // Only legal pages that publish a text are advertised (they carry a
+  // legal.<doc>_version). The constitution page has no published version —
+  // the document is issued by the secretariat on request — so it stays out
+  // of the sitemap. Each document's route path is its document key.
   const legalPaths = LEGAL_DOCUMENTS.filter(
     (doc) => legalDocumentVersion(settings, doc) !== null,
   ).map((doc) => `/${doc}`);

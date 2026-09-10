@@ -3,7 +3,9 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { Reveal } from "@/components/ui/Reveal";
+import { CouncilRoster } from "@/components/about/CouncilRoster";
 import { getLeadership } from "@/services/organisation";
+import { getContentBlocks } from "@/services/content";
 import { imageUrl, loc } from "@/lib/utils/l10n";
 import { pageMetadata } from "@/lib/seo";
 import type { Locale } from "@/i18n/routing";
@@ -11,12 +13,16 @@ import type { Metadata } from "next";
 
 export const revalidate = 300;
 
+/** Public order: the three 2026 groups, then the legacy keys (still valid
+ *  in the CMS) so a row left in an old group is never silently dropped. */
 const GROUP_ORDER = [
+  "executive",
+  "honorary",
+  "secretariat",
   "president",
   "honorary_chairman",
   "vice_chair",
   "advisor",
-  "secretariat",
 ] as const;
 
 export async function generateMetadata({
@@ -44,11 +50,15 @@ export default async function LeadershipPage({
   const locale = rawLocale as Locale;
   const t = await getTranslations("leadership");
 
-  const people = await getLeadership().catch(() => []);
+  const [people, content] = await Promise.all([
+    getLeadership().catch(() => []),
+    getContentBlocks().catch(() => null),
+  ]);
   const groups = GROUP_ORDER.map((key) => ({
     key,
     people: people.filter((person) => person.group_key === key),
   })).filter((group) => group.people.length > 0);
+  const council = content?.council ?? null;
 
   return (
     <>
@@ -105,6 +115,25 @@ export default async function LeadershipPage({
                 </div>
               </div>
             ))}
+
+            {/* Council roster — compact name grid, no portraits */}
+            {council && (
+              <div id="council" className="scroll-mt-24">
+                <h2 className="flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.08em] text-sea-800">
+                  <span
+                    className="h-0.5 w-6 rounded-full bg-sea-800"
+                    aria-hidden
+                  />
+                  {t("councilTitle")}
+                </h2>
+                <div className="mt-8">
+                  <CouncilRoster members={council.members} locale={locale} />
+                </div>
+                <p className="mt-6 text-caption text-grey-500">
+                  {t("councilNote")}
+                </p>
+              </div>
+            )}
           </div>
         </Container>
       </section>

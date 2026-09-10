@@ -2,18 +2,15 @@
  * News category policy. Dependency-free so it runs under `node --test`
  * (tests/news-categories.test.mjs).
  *
- * Categories are CMS data (`news_categories`). The DOCX (§资讯中心) fixes
- * five first-level categories; this module records them once so that the
- * preview build, the tests and the migration mirror
- * (supabase/migrations/20260902122000_news_categories_docx.sql) agree, and
- * decides which rows are offered as tabs and which are *legacy*: kept for
- * the articles that still reference them, never offered as a first-level
- * category, and marked "历史分类待整理" wherever the article is listed.
+ * Categories are CMS data (`news_categories`), and the CMS is the single
+ * source of truth: `is_active` decides which rows are offered as
+ * first-level tabs and which are *legacy* — kept for the articles that
+ * still reference them, but never offered as a tab.
  *
- * Until that migration adds `news_categories.is_active`, the CMS cannot
- * express "legacy", so every build applies the DOCX structure (five tabs,
- * DOCX names, everything else legacy). After it, the CMS flag decides and
- * the preview build alone keeps enforcing the DOCX structure.
+ * The five first-level categories fixed by the DOCX (§资讯中心) are
+ * recorded here as a structural fallback, used only if a row arrives
+ * without `is_active` (i.e. before migration 20260902122000 added the
+ * column). Their names and order mirror that migration.
  */
 
 export type NewsCategoryDef = {
@@ -58,8 +55,7 @@ export const DOCX_NEWS_CATEGORIES: readonly NewsCategoryDef[] = [
   },
 ];
 
-/** Shape of a `news_categories` row as far as this module cares. `is_active`
- *  is added by migration 20260902122000 and may be absent before it runs. */
+/** Shape of a `news_categories` row as far as this module cares. */
 export type NewsCategorySource = {
   slug: string;
   name_zh: string;
@@ -69,7 +65,7 @@ export type NewsCategorySource = {
 };
 
 export type ResolvedNewsCategory = NewsCategoryDef & {
-  /** Not offered as a first-level category; articles keep it, marked. */
+  /** Not offered as a first-level category; its articles stay listed. */
   legacy: boolean;
 };
 
@@ -80,42 +76,37 @@ export function isDocxNewsCategory(slug: string | null | undefined): boolean {
 }
 
 /**
- * Whether the confirmed DOCX structure applies to a row rather than the
- * CMS flags: in the preview build (`enforceDocx`), and in every build while
- * the CMS cannot express the structure yet — i.e. until migration
- * 20260902122000 adds `is_active` (the row then has no such field). Once
- * the column exists the CMS is the single source of truth.
+ * Whether the DOCX structure stands in for the CMS flags, i.e. the row
+ * arrived without `is_active` (pre-migration 20260902122000). Once the
+ * column exists the CMS is the single source of truth.
  */
 function docxApplies(
   row: Pick<NewsCategorySource, "is_active"> | null | undefined,
-  enforceDocx: boolean,
 ): boolean {
-  return enforceDocx || row?.is_active == null;
+  return row?.is_active == null;
 }
 
 /**
  * Whether a category row is legacy.
- * - DOCX mode (preview, or pre-migration): anything outside the DOCX five.
- * - otherwise (migrated CMS): `is_active === false`.
+ * - CMS row (`is_active` present): `is_active === false`.
+ * - fallback (no `is_active`): anything outside the DOCX five.
  */
 export function isLegacyNewsCategory(
   row: Pick<NewsCategorySource, "slug" | "is_active"> | null | undefined,
-  enforceDocx: boolean,
 ): boolean {
   if (!row) return false;
-  if (docxApplies(row, enforceDocx)) return !isDocxNewsCategory(row.slug);
+  if (docxApplies(row)) return !isDocxNewsCategory(row.slug);
   return row.is_active === false;
 }
 
-/** Display name for a row: the DOCX wording for the five confirmed slugs in
- *  DOCX mode (the migration writes the same names), the CMS value
- *  otherwise. Falls back across languages like `loc()`. */
+/** Display name for a row: the CMS value, or the DOCX wording for the five
+ *  confirmed slugs when the row carries no `is_active` (the migration
+ *  writes the same names). Falls back across languages like `loc()`. */
 export function newsCategoryName(
   row: Pick<NewsCategorySource, "slug" | "name_zh" | "name_en" | "is_active">,
   locale: "zh" | "en",
-  enforceDocx: boolean,
 ): string {
-  const docx = docxApplies(row, enforceDocx)
+  const docx = docxApplies(row)
     ? docxBySlug.get(row.slug.trim().toLowerCase())
     : undefined;
   const source = docx ?? row;
@@ -125,24 +116,20 @@ export function newsCategoryName(
 }
 
 /**
- * The category list the news index works from.
- * - DOCX mode (`enforceDocx`, or CMS rows without `is_active` = migration
- *   not yet applied): exactly the DOCX five (DOCX names and order, always
- *   present even when the CMS has no row or no article yet), followed by
- *   any other CMS row as legacy.
- * - otherwise: the CMS rows in `display_order`, legacy per `is_active`.
+ * The category list the news index works from: the CMS rows in
+ * `display_order`, legacy per `is_active`. If any row arrives without
+ * `is_active` the DOCX five are prepended as the structural fallback
+ * (DOCX names and order, present even when a category has no article yet).
  */
 export function resolveNewsCategories(
   rows: readonly NewsCategorySource[],
-  options: { enforceDocx: boolean },
 ): ResolvedNewsCategory[] {
   const byOrder = (a: NewsCategorySource, b: NewsCategorySource) =>
     (a.display_order ?? 0) - (b.display_order ?? 0);
   const clean = rows
     .filter((row) => typeof row.slug === "string" && row.slug.trim() !== "")
     .map((row) => ({ ...row, slug: row.slug.trim().toLowerCase() }));
-  const docxMode =
-    options.enforceDocx || clean.some((row) => row.is_active == null);
+  const docxMode = clean.some((row) => row.is_active == null);
   const seen = new Set<string>();
   const out: ResolvedNewsCategory[] = [];
 
@@ -160,7 +147,7 @@ export function resolveNewsCategories(
       name_zh: row.name_zh,
       name_en: row.name_en,
       display_order: row.display_order ?? 0,
-      legacy: isLegacyNewsCategory(row, docxMode),
+      legacy: isLegacyNewsCategory(row),
     });
   }
   return out;

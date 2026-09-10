@@ -6,32 +6,32 @@
 //   * forbidden placeholder copy (待补充, Lorem ipsum, TODO, $X,XXX);
 //   * heading structure (exactly one h1, no skipped levels);
 //   * canonical / hreflang / og:image / twitter:image / JSON-LD presence;
-//   * robots: preview builds must be noindex everywhere; production builds
-//     may be noindex only on unpublished legal pages;
+//   * robots: no page may be noindex, except the Next.js error page and a
+//     legal document that is not published (at launch only /constitution/,
+//     which the secretariat issues on request);
 //   * past events must not claim EventScheduled; articles must be og:type
-//     article;
-//   * preview builds: every form method=post inside a disabled fieldset, no
-//     enabled file input, banner text present.
+//     article.
 //
-// Usage: node scripts/check-static-output.mjs <out-dir> [--preview]
-// Exit code 1 when any problem is found (scripts/build-static-preview.sh and
-// the Pages workflow run it right after `next build`).
+// Usage: node scripts/check-static-output.mjs <out-dir>
+// Exit code 1 when any problem is found (scripts/build-static.sh and the
+// Pages workflow run it right after `next build`).
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { findUnresolvedPlaceholders, stripNonVisible } from "./lib/html-checks.mjs";
 
 const root = process.argv[2];
-const preview = process.argv.includes("--preview");
 if (!root) {
-  console.error("usage: check-static-output.mjs <out-dir> [--preview]");
+  console.error("usage: check-static-output.mjs <out-dir>");
   process.exit(2);
 }
 
 const FORBIDDEN = ["待补充", "$X,XXX", "X,XXX", "Lorem ipsum", "TODO"];
-// Production pages allowed to be noindex: unpublished legal documents.
-const PRODUCTION_NOINDEX_OK = /\/(terms|privacy|accessibility|constitution)\/index\.html$/;
+// Legal pages may be noindex while unpublished (no site_settings.legal
+// version stamp). At launch terms/privacy/accessibility are published with
+// version 2026-09; the constitution stays unpublished by decision.
+const LEGAL_NOINDEX_OK = /\/(terms|privacy|accessibility|constitution)\/index\.html$/;
 // Next.js error pages (global not-found): no canonical/hreflang/OG/JSON-LD
-// by design; placeholder, heading, robots and preview-banner checks still run.
+// by design; placeholder, heading and robots checks still run.
 const ERROR_PAGE = /^(404|_not-found)\/index\.html$|^404\.html$/;
 
 async function* walk(dir) {
@@ -75,9 +75,7 @@ for await (const file of walk(root)) {
   // Metadata
   const errorPage = ERROR_PAGE.test(rel);
   const noindex = /<meta name="robots" content="noindex[^"]*"/.test(html);
-  if (preview && !noindex) p("preview page without noindex");
-  if (!preview && noindex && !errorPage && !PRODUCTION_NOINDEX_OK.test(rel))
-    p("production page with noindex");
+  if (noindex && !errorPage && !LEGAL_NOINDEX_OK.test(rel)) p("production page with noindex");
   if (!errorPage) {
     if (!/<link rel="canonical" href="[^"]+"/.test(html)) p("no canonical");
     const hreflangs = [...html.matchAll(/hrefLang="([^"]+)"|hreflang="([^"]+)"/gi)].map(
@@ -105,18 +103,6 @@ for await (const file of walk(root)) {
   if (/\/news\/[^/]+\/index\.html$/.test(rel)) {
     stats.newsPages++;
     if (!/property="og:type" content="article"/.test(html)) p("news article og:type not article");
-  }
-
-  // Preview banner + form isolation
-  if (preview) {
-    if (!html.includes("商会审查预览") && !html.includes("Chamber review preview"))
-      p("no preview banner text");
-    const forms = [...html.matchAll(/<form\b[^>]*>/g)].map((m) => m[0]);
-    for (const form of forms)
-      if (!/method="post"/i.test(form)) p(`form without method=post: ${form.slice(0, 80)}`);
-    if (forms.length > 0 && !/<fieldset[^>]*disabled/.test(html))
-      p("form page without disabled fieldset");
-    if (/<input[^>]*type="file"(?![^>]*disabled)[^>]*>/.test(html)) p("enabled file input");
   }
 
   // Forbidden placeholder copy (visible markup only)

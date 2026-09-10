@@ -41,8 +41,8 @@ describe("DOCX category structure", () => {
   });
 });
 
-describe("preview build (enforceDocx)", () => {
-  const resolved = resolveNewsCategories(REMOTE_ROWS, { enforceDocx: true });
+describe("rows without is_active (DOCX fallback)", () => {
+  const resolved = resolveNewsCategories(REMOTE_ROWS);
 
   test("offers the five DOCX categories first, with DOCX names, then legacy rows", () => {
     assert.deepEqual(
@@ -60,17 +60,17 @@ describe("preview build (enforceDocx)", () => {
     assert.equal(resolved[3].name_en, "Market Entry Guides");
   });
 
-  test("the five are present even when the CMS has no rows at all", () => {
-    const empty = resolveNewsCategories([], { enforceDocx: true });
-    assert.equal(empty.length, 5);
-    assert.ok(empty.every((c) => !c.legacy));
+  test("no CMS rows at all → no categories (the CMS is the source of truth)", () => {
+    // The fallback stands in for a missing is_active column, not for a
+    // failed query: with nothing to describe, no tab is invented.
+    assert.deepEqual(resolveNewsCategories([]), []);
   });
 
   test("legacy detection and naming per row", () => {
-    assert.equal(isLegacyNewsCategory(REMOTE_ROWS[1], true), true);
-    assert.equal(isLegacyNewsCategory(REMOTE_ROWS[0], true), false);
-    assert.equal(newsCategoryName(REMOTE_ROWS[2], "en", true), "China–Australia Trade Policy");
-    assert.equal(newsCategoryName(REMOTE_ROWS[1], "zh", true), "中澳经贸合作");
+    assert.equal(isLegacyNewsCategory(REMOTE_ROWS[1]), true);
+    assert.equal(isLegacyNewsCategory(REMOTE_ROWS[0]), false);
+    assert.equal(newsCategoryName(REMOTE_ROWS[2], "en"), "China–Australia Trade Policy");
+    assert.equal(newsCategoryName(REMOTE_ROWS[1], "zh"), "中澳经贸合作");
   });
 });
 
@@ -79,7 +79,7 @@ describe("production build", () => {
     // The remote rows carry no is_active field yet, so the CMS cannot mark a
     // legacy category: production must still show the five DOCX tabs and
     // never promote 中澳经贸合作.
-    const resolved = resolveNewsCategories(REMOTE_ROWS, { enforceDocx: false });
+    const resolved = resolveNewsCategories(REMOTE_ROWS);
     assert.deepEqual(
       resolved.map((c) => [c.slug, c.legacy]),
       [
@@ -92,31 +92,31 @@ describe("production build", () => {
       ],
     );
     assert.equal(resolved[1].name_en, "China–Australia Trade Policy");
-    assert.equal(newsCategoryName(REMOTE_ROWS[2], "en", false), "China–Australia Trade Policy");
-    assert.equal(isLegacyNewsCategory(REMOTE_ROWS[1], false), true);
-    assert.equal(isLegacyNewsCategory(REMOTE_ROWS[0], false), false);
+    assert.equal(newsCategoryName(REMOTE_ROWS[2], "en"), "China–Australia Trade Policy");
+    assert.equal(isLegacyNewsCategory(REMOTE_ROWS[1]), true);
+    assert.equal(isLegacyNewsCategory(REMOTE_ROWS[0]), false);
   });
 
   test("after the migration the CMS decides: is_active=false marks the legacy category, CMS names are used", () => {
     const rows = REMOTE_ROWS.map((r) =>
       r.slug === "trade-cooperation" ? { ...r, is_active: false, display_order: 99 } : { ...r, is_active: true },
     );
-    const resolved = resolveNewsCategories(rows, { enforceDocx: false });
+    const resolved = resolveNewsCategories(rows);
     assert.deepEqual(
       resolved.filter((c) => c.legacy).map((c) => c.slug),
       ["trade-cooperation"],
     );
     assert.equal(resolved.at(-1).slug, "trade-cooperation", "sorted by display_order");
     // The migration writes the DOCX names; a later CMS edit wins over code.
-    assert.equal(newsCategoryName({ ...rows[2], name_en: "Edited in CMS" }, "en", false), "Edited in CMS");
-    assert.equal(isLegacyNewsCategory({ slug: "x", is_active: true }, false), false);
+    assert.equal(newsCategoryName({ ...rows[2], name_en: "Edited in CMS" }, "en"), "Edited in CMS");
+    assert.equal(isLegacyNewsCategory({ slug: "x", is_active: true }), false);
     // A migrated CMS with an extra active category offers it as a tab.
     const extra = [...rows, { slug: "new-cat", name_zh: "新分类", name_en: "New", display_order: 7, is_active: true }];
-    assert.ok(resolveNewsCategories(extra, { enforceDocx: false }).some((c) => c.slug === "new-cat" && !c.legacy));
+    assert.ok(resolveNewsCategories(extra).some((c) => c.slug === "new-cat" && !c.legacy));
   });
 
   test("name falls back across languages like loc()", () => {
-    assert.equal(newsCategoryName({ slug: "x", name_zh: "", name_en: "Only EN", is_active: true }, "zh", false), "Only EN");
+    assert.equal(newsCategoryName({ slug: "x", name_zh: "", name_en: "Only EN", is_active: true }, "zh"), "Only EN");
   });
 });
 
@@ -127,7 +127,7 @@ describe("tabs", () => {
   ];
 
   test("every non-legacy category is a tab, with a 0 count where empty; legacy never is", () => {
-    const resolved = resolveNewsCategories(REMOTE_ROWS, { enforceDocx: true }).map((c) => ({
+    const resolved = resolveNewsCategories(REMOTE_ROWS).map((c) => ({
       slug: c.slug,
       name: c.name_zh,
       legacy: c.legacy,

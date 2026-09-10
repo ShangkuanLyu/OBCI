@@ -16,7 +16,7 @@ import {
   type ActionState,
 } from "@/app/[locale]/admin/chapters/actions";
 import type { Tables } from "@/types/database.types";
-import type { ChapterExtras } from "@/lib/fixtures/design-review";
+import type { ChapterExtras } from "@/lib/content/types";
 
 const initialState: ActionState = { status: "idle" };
 
@@ -25,7 +25,8 @@ export function ChapterForm({
   item,
 }: {
   locale: string;
-  /** experts_* / certifications_* arrive once the pending migration lands. */
+  /** experts_* / certifications_* / deputy_secretary_general arrive once the
+   *  pending migration lands. */
   item?: Tables<"industry_chapters"> & ChapterExtras;
 }) {
   const zh = locale === "zh";
@@ -229,14 +230,26 @@ export function ChapterForm({
 
         <div className="grid gap-5 md:grid-cols-2">
           <Field
-            label={zh ? "秘书长" : "Secretary general"}
+            label={zh ? "秘书长" : "Secretary-General"}
             htmlFor="secretary_general"
+            hint={zh ? "按名录写法「Latin 中文」，如 Bryan Guan 关星明" : "As in the roster, “Latin 中文”, e.g. Bryan Guan 关星明"}
           >
             <TextInput
               id="secretary_general"
               name="secretary_general"
               maxLength={200}
               defaultValue={item?.secretary_general ?? ""}
+            />
+          </Field>
+          <Field
+            label={zh ? "常务副秘书长" : "Executive Deputy Secretary-General"}
+            htmlFor="deputy_secretary_general"
+          >
+            <TextInput
+              id="deputy_secretary_general"
+              name="deputy_secretary_general"
+              maxLength={200}
+              defaultValue={item?.deputy_secretary_general ?? ""}
             />
           </Field>
           <Field

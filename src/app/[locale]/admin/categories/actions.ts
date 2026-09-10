@@ -19,7 +19,7 @@ const categorySchema = z.object({
   name_en: z.string().trim().min(1).max(200),
   display_order: z.coerce.number().int().min(0).max(9999),
   // false = legacy category: never a first-level tab; its articles stay
-  // published, marked "历史分类待整理" (column from migration 20260902122000).
+  // published and listed under "全部" (column from migration 20260902122000).
   is_active: z.boolean(),
 });
 

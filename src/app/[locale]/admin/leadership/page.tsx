@@ -3,20 +3,25 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
+/* Same order and labels as LeadershipForm / messages leadership.groups.*. */
 const GROUP_ORDER = [
+  "executive",
+  "honorary",
+  "secretariat",
   "president",
   "honorary_chairman",
   "vice_chair",
   "advisor",
-  "secretariat",
 ];
 
 const GROUP_LABELS: Record<string, { zh: string; en: string }> = {
-  president: { zh: "会长", en: "President" },
-  honorary_chairman: { zh: "名誉主席", en: "Honorary Chairman" },
-  vice_chair: { zh: "副会长", en: "Vice Chair" },
-  advisor: { zh: "顾问", en: "Advisor" },
+  executive: { zh: "执委会", en: "Executive Committee" },
+  honorary: { zh: "荣誉主席与荣誉顾问", en: "Honorary Patrons" },
   secretariat: { zh: "秘书处", en: "Secretariat" },
+  president: { zh: "会长（旧分组）", en: "President (legacy)" },
+  honorary_chairman: { zh: "名誉主席（旧分组）", en: "Honorary Chairman (legacy)" },
+  vice_chair: { zh: "副会长（旧分组）", en: "Vice Chair (legacy)" },
+  advisor: { zh: "顾问（旧分组）", en: "Advisor (legacy)" },
 };
 
 function groupRank(key: string) {

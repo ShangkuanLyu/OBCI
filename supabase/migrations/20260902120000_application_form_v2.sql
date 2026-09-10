@@ -15,13 +15,22 @@
 --  * industry_chapters gains the two chapter-template blocks that had no
 --    data model: expert advisers and certification information
 --    (resources_* = local agents / channels, services_* = ABS industry
---    services).
+--    services), plus deputy_secretary_general (the 2026 committee roster
+--    lists an Executive Deputy Secretary-General for the Construction
+--    Committee).
+--  * leadership.group_key CHECK is widened to accept the 2026 public
+--    groups 'executive' and 'honorary' (the five original values stay
+--    valid; no row is rewritten here — 20260902121000 §7 regroups them).
 --  * events gains a tags text[] column (chapter association mechanism,
 --    mirroring news.tags) + GIN indexes for tag lookups.
 --  * submit_membership_application_v2 writes the full field set and
---    enforces the legal gate server-side. The v1 RPC is kept unchanged for
---    backwards compatibility; revoke its anon grant once the v2 form is
---    live (see docs/preview-to-production-matrix.md §5).
+--    enforces the legal gate server-side. It also records the applicant's
+--    chosen payment method (p_payment_method → the existing remote column
+--    membership_applications.payment_method; no online payment exists —
+--    owner decision D7, 2026-09-10) and requires the company address and
+--    company telephone (brochure application form). The v1 RPC is kept
+--    unchanged for backwards compatibility; revoke its anon grant once the
+--    v2 form is live (see docs/preview-to-production-matrix.md §5).
 
 alter table public.membership_applications
   add column if not exists first_name text,
@@ -48,7 +57,8 @@ alter table public.industry_chapters
   add column if not exists experts_zh text[] not null default '{}',
   add column if not exists experts_en text[] not null default '{}',
   add column if not exists certifications_zh text[] not null default '{}',
-  add column if not exists certifications_en text[] not null default '{}';
+  add column if not exists certifications_en text[] not null default '{}',
+  add column if not exists deputy_secretary_general text;
 
 comment on column public.industry_chapters.resources_zh is
   'Australian local agents / channel resources (one item per element).';
@@ -56,6 +66,22 @@ comment on column public.industry_chapters.experts_zh is
   'Expert advisers of the chapter (one item per element).';
 comment on column public.industry_chapters.certifications_zh is
   'Relevant Australian certifications, e.g. TGA, AS/NZS (one item per element).';
+comment on column public.industry_chapters.deputy_secretary_general is
+  'Executive Deputy Secretary-General of the committee (常务副秘书长), stored like secretary_general as "Latin 中文".';
+
+-- Leadership display groups: the 2026 roster publishes three public groups
+-- (executive / honorary / secretariat). The original five keys remain valid
+-- so no existing row can violate the constraint; the data migration that
+-- follows moves rows between groups.
+alter table public.leadership
+  drop constraint if exists leadership_group_key_check;
+alter table public.leadership
+  add constraint leadership_group_key_check check (
+    group_key in (
+      'president', 'honorary_chairman', 'vice_chair', 'advisor', 'secretariat',
+      'executive', 'honorary'
+    )
+  );
 
 alter table public.events
   add column if not exists tags text[] not null default '{}';
@@ -65,10 +91,12 @@ create index if not exists news_tags_gin_idx on public.news using gin (tags);
 
 -- Full-field application submission. Validation mirrors the client 1:1
 -- (src/lib/apply/intro-limits.ts, src/lib/review.ts):
---  * the legal texts must be approved: site_settings.legal carries
---    constitution_version, terms_version and privacy_version, and the
---    caller's p_policy_version must equal the server-computed stamp
---    "constitution=…;terms=…;privacy=…" (so it cannot be forged or omitted);
+--  * the published policies must be approved: site_settings.legal carries
+--    terms_version and privacy_version, and the caller's p_policy_version
+--    must equal the server-computed stamp "terms=…;privacy=…" (so it cannot
+--    be forged or omitted). The constitution is issued by the secretariat on
+--    request and has no published version; the undertaking to be bound by it
+--    is still recorded per application;
 --  * membership type must exist and be active;
 --  * constitution, terms AND privacy consent are each mandatory and each
 --    stored as the value received (never a literal);
@@ -77,7 +105,13 @@ create index if not exists news_tags_gin_idx on public.news using gin (tags);
 --  * English introduction: at most 500 whitespace-separated words and at
 --    most 4000 characters;
 --  * both introductions are trimmed of ASCII and ideographic whitespace
---    with the same character class the client uses.
+--    with the same character class the client uses;
+--  * company address and company telephone are required (brochure form);
+--  * p_payment_method must be one of bank_transfer | cheque | credit_card
+--    (src/lib/utils/payment-methods.mjs) and is stored verbatim in the
+--    existing payment_method column — it records the applicant's intent
+--    only; the fee is paid manually (EFT / cheque / card via the
+--    secretariat) after approval.
 create or replace function public.submit_membership_application_v2(
   p_membership_type_code text,
   p_first_name text,
@@ -97,7 +131,8 @@ create or replace function public.submit_membership_application_v2(
   p_agreed_privacy boolean default false,
   p_agreed_marketing boolean default false,
   p_policy_version text default null,
-  p_locale text default 'zh'
+  p_locale text default 'zh',
+  p_payment_method text default null
 ) returns jsonb
 language plpgsql
 security definer
@@ -115,17 +150,22 @@ declare
   v_intro_en text := nullif(regexp_replace(coalesce(p_company_intro_en, ''), '^[\s　]+|[\s　]+$', '', 'g'), '');
   v_first text := btrim(coalesce(p_first_name, ''));
   v_last text := btrim(coalesce(p_last_name, ''));
+  v_address text := nullif(btrim(coalesce(p_company_address, '')), '');
+  v_phone text := nullif(btrim(coalesce(p_company_phone, '')), '');
 begin
-  -- Legal gate: nothing lawful to consent to until all three texts exist.
+  -- Legal gate: the two policies the website itself publishes must carry a
+  -- version stamp before an application can be accepted. The constitution is
+  -- the association's own governing document, issued by the secretariat on
+  -- request, so it has no published version; the applicant's undertaking to
+  -- be bound by it is still recorded (p_agreed_constitution below), exactly
+  -- as on the paper application form.
   select value into v_legal from public.site_settings where key = 'legal';
   if v_legal is null
-     or coalesce(btrim(v_legal->>'constitution_version'), '') = ''
      or coalesce(btrim(v_legal->>'terms_version'), '') = ''
      or coalesce(btrim(v_legal->>'privacy_version'), '') = '' then
     raise exception 'legal texts not approved';
   end if;
-  v_expected := 'constitution=' || btrim(v_legal->>'constitution_version')
-             || ';terms=' || btrim(v_legal->>'terms_version')
+  v_expected := 'terms=' || btrim(v_legal->>'terms_version')
              || ';privacy=' || btrim(v_legal->>'privacy_version');
   if nullif(btrim(coalesce(p_policy_version, '')), '') is distinct from v_expected then
     raise exception 'policy version mismatch';
@@ -140,6 +180,16 @@ begin
 
   if v_first = '' or v_last = '' then
     raise exception 'name required';
+  end if;
+  if v_address is null then
+    raise exception 'company address required';
+  end if;
+  if v_phone is null then
+    raise exception 'company phone required';
+  end if;
+  if p_payment_method is null
+     or p_payment_method not in ('bank_transfer', 'cheque', 'credit_card') then
+    raise exception 'invalid payment method';
   end if;
 
   if coalesce(p_agreed_constitution, false) is not true then
@@ -174,7 +224,7 @@ begin
     organisation_name, company_address, fax, "position",
     company_intro, company_intro_zh, company_intro_en,
     directory_consent, agreed_constitution, agreed_terms, agreed_privacy, agreed_marketing,
-    consent_at, policy_version, locale
+    consent_at, policy_version, locale, payment_method
   ) values (
     v_type_id,
     (select auth.uid()),
@@ -183,9 +233,9 @@ begin
     v_last,
     lower(btrim(p_email)),
     nullif(btrim(coalesce(p_mobile, '')), ''),
-    nullif(btrim(coalesce(p_company_phone, '')), ''),
+    v_phone,
     nullif(btrim(coalesce(p_company_name, '')), ''),
-    nullif(btrim(coalesce(p_company_address, '')), ''),
+    v_address,
     nullif(btrim(coalesce(p_fax, '')), ''),
     nullif(btrim(coalesce(p_position, '')), ''),
     coalesce(v_intro_zh, v_intro_en),
@@ -198,7 +248,8 @@ begin
     coalesce(p_agreed_marketing, false),
     now(),
     v_expected,
-    case when p_locale in ('zh', 'en') then p_locale else 'zh' end
+    case when p_locale in ('zh', 'en') then p_locale else 'zh' end,
+    p_payment_method
   )
   returning id, access_token into v_id, v_token;
 
@@ -208,9 +259,9 @@ $$;
 
 revoke execute on function public.submit_membership_application_v2(
   text, text, text, text, text, text, text, text, text, text, text, text,
-  boolean, boolean, boolean, boolean, boolean, text, text
+  boolean, boolean, boolean, boolean, boolean, text, text, text
 ) from public;
 grant execute on function public.submit_membership_application_v2(
   text, text, text, text, text, text, text, text, text, text, text, text,
-  boolean, boolean, boolean, boolean, boolean, text, text
+  boolean, boolean, boolean, boolean, boolean, text, text, text
 ) to anon, authenticated, service_role;

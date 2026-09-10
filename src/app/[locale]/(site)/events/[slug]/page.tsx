@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { ButtonLink } from "@/components/ui/Button";
 import { eventIsUpcoming, getAllEventSlugs, getEventBySlug } from "@/services/events";
-import { JsonLd } from "@/components/seo/JsonLd";
+import { JsonLd, ORGANIZATION_NAME } from "@/components/seo/JsonLd";
 import { loc, formatDate, mediaUrl } from "@/lib/utils/l10n";
 import { renderMarkdown } from "@/lib/utils/markdown";
 import { cn } from "@/lib/utils/cn";
@@ -75,7 +75,7 @@ export default async function EventDetailPage({
       : undefined,
     organizer: {
       "@type": "Organization",
-      name: "Oceania Business Association Incorporated",
+      name: ORGANIZATION_NAME,
     },
     image: cover ?? undefined,
     url: absoluteUrl(locale, `/events/${slug}`),

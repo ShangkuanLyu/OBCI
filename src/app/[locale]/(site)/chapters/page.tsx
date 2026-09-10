@@ -3,7 +3,6 @@ import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { PageHero } from "@/components/ui/PageHero";
 import { Reveal } from "@/components/ui/Reveal";
-import { ReviewNote } from "@/components/ui/ReviewNote";
 import { getChapters } from "@/services/organisation";
 import { loc } from "@/lib/utils/l10n";
 import { countWord } from "@/lib/utils/count-word";
@@ -43,9 +42,6 @@ export default async function ChaptersPage({
   const tCommon = await getTranslations("common");
 
   const chapters = await getChapters().catch(() => []);
-  const taglinesPending =
-    chapters.length > 0 &&
-    chapters.every((chapter) => !loc(chapter, "tagline", locale));
 
   return (
     <>
@@ -61,9 +57,6 @@ export default async function ChaptersPage({
           {chapters.length === 0 && (
             <p className="text-body text-grey-500">{t("empty")}</p>
           )}
-
-          {/* Renders only in the review deployment. */}
-          {taglinesPending && <ReviewNote className="mb-8" />}
 
           {/* Modular industry cards (per the DOCX brief); any number of
               active chapters renders. */}

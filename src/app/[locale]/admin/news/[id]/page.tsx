@@ -2,7 +2,8 @@ import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { NewsForm } from "@/components/admin/NewsForm";
+import { NewsForm, type NewsBodyImage } from "@/components/admin/NewsForm";
+import { mediaUrl } from "@/lib/utils/l10n";
 
 export default async function AdminNewsEditPage({
   params,
@@ -35,6 +36,20 @@ export default async function AdminNewsEditPage({
 
   if (!row) notFound();
 
+  // Body images uploaded through the form live under news/<slug>/; the
+  // panel lists them with the snippet that references each one.
+  const folder = `news/${row.slug}`;
+  const { data: objects } = await supabase.storage
+    .from("media")
+    .list(folder, { limit: 1000, sortBy: { column: "name", order: "asc" } });
+  const bodyImages: NewsBodyImage[] = (objects ?? [])
+    .filter((object) => object.id !== null && !object.name.startsWith("."))
+    .map((object) => {
+      const path = `${folder}/${object.name}`;
+      return { name: object.name, path, url: mediaUrl(path) ?? "" };
+    })
+    .filter((image) => image.url !== "");
+
   return (
     <>
       <h1 className="text-h3 font-semibold text-ink">
@@ -59,6 +74,7 @@ export default async function AdminNewsEditPage({
           }))}
           initial={row}
           locale={locale}
+          bodyImages={bodyImages}
         />
       </div>
     </>

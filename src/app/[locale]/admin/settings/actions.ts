@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertRole } from "@/lib/auth";
 import { CONTACT_FIELDS } from "@/lib/review";
+import {
+  COUNCIL_MAX_MEMBERS,
+  parseCouncilLines,
+} from "@/lib/utils/council-lines.mjs";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database.types";
 
@@ -30,6 +34,7 @@ const ORG_UNIT_KINDS = [
 const CORE_VALUE_SLOTS = 4;
 const ORG_UNIT_SLOTS = 6;
 const GALLERY_SLOTS = 8;
+const OUTLOOK_SLOTS = 3;
 
 const slug = (max: number) =>
   z
@@ -87,9 +92,16 @@ const settingsSchema = z.object({
   // revenue note
   revenue_note_zh: z.string().trim().max(1000),
   revenue_note_en: z.string().trim().max(1000),
-  // member benefits (textareas, one item per line)
+  // member benefits / main objectives (textareas, one item per line)
   member_benefits_zh: z.string().max(5000),
   member_benefits_en: z.string().max(5000),
+  objectives_zh: z.string().max(5000),
+  objectives_en: z.string().max(5000),
+  // council roster (textarea, one member per line; parsed below)
+  council_lines: z.string().max(10000),
+  // annual review / outlook (paragraphs are fixed slots, parsed below)
+  outlook_title_zh: z.string().trim().max(200),
+  outlook_title_en: z.string().trim().max(200),
   // strategy committee / secretariat descriptions
   strategy_committee_zh: z.string().trim().max(2000),
   strategy_committee_en: z.string().trim().max(2000),
@@ -97,6 +109,13 @@ const settingsSchema = z.object({
   secretariat_en: z.string().trim().max(2000),
   // review gates
   review_confirmed: z.array(z.enum(REVIEW_MODULES)),
+  // bank account for manual fee payment (site_settings.bank; shown on the
+  // application page as stored — no reformatting, so type what should print)
+  bank_account_name: z.string().trim().max(200),
+  bank_name: z.string().trim().max(200),
+  bank_bsb: z.string().trim().max(20),
+  bank_account_number: z.string().trim().max(50),
+  bank_cards: z.string().trim().max(200),
   // approved legal-text versions (empty = not approved)
   constitution_version: z.string().trim().max(50),
   terms_version: z.string().trim().max(50),
@@ -106,6 +125,20 @@ const settingsSchema = z.object({
 const benefitItemSchema = z.object({
   text_zh: z.string().max(1000),
   text_en: z.string().max(1000),
+});
+
+const paragraphSchema = z.object({
+  text_zh: z.string().trim().max(2000),
+  text_en: z.string().trim().max(2000),
+});
+
+/* Shape read back by services/content.ts asCouncil(); the parser already
+   guarantees a name in both languages. */
+const councilMemberSchema = z.object({
+  name_en: z.string().trim().min(1).max(200),
+  name_zh: z.string().trim().min(1).max(200),
+  note_en: z.string().trim().max(200),
+  note_zh: z.string().trim().max(200),
 });
 
 const titledItemSchema = z.object({
@@ -166,10 +199,11 @@ function asRecord(value: Json | undefined): Record<string, Json | undefined> {
 }
 
 /**
- * Zip the zh/en benefit textareas into aligned items: one item per line,
- * matched by line index; the shorter side is padded with "".
+ * Zip a pair of zh/en textareas (member benefits, objectives) into aligned
+ * items: one item per line, matched by line index; the shorter side is
+ * padded with "".
  */
-function zipBenefitItems(zhText: string, enText: string) {
+function zipLineItems(zhText: string, enText: string) {
   const toItemLines = (value: string) => {
     const lines = value.split(/\r?\n/).map((line) => line.trim());
     while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
@@ -230,11 +264,21 @@ export async function saveSettings(
     revenue_note_en: field(formData, "revenue_note_en"),
     member_benefits_zh: field(formData, "member_benefits_zh"),
     member_benefits_en: field(formData, "member_benefits_en"),
+    objectives_zh: field(formData, "objectives_zh"),
+    objectives_en: field(formData, "objectives_en"),
+    council_lines: field(formData, "council_lines"),
+    outlook_title_zh: field(formData, "outlook_title_zh"),
+    outlook_title_en: field(formData, "outlook_title_en"),
     strategy_committee_zh: field(formData, "strategy_committee_zh"),
     strategy_committee_en: field(formData, "strategy_committee_en"),
     secretariat_zh: field(formData, "secretariat_zh"),
     secretariat_en: field(formData, "secretariat_en"),
     review_confirmed: stringList(formData, "review_confirmed"),
+    bank_account_name: field(formData, "bank_account_name"),
+    bank_name: field(formData, "bank_name"),
+    bank_bsb: field(formData, "bank_bsb"),
+    bank_account_number: field(formData, "bank_account_number"),
+    bank_cards: field(formData, "bank_cards"),
     constitution_version: field(formData, "constitution_version"),
     terms_version: field(formData, "terms_version"),
     privacy_version: field(formData, "privacy_version"),
@@ -303,15 +347,37 @@ export async function saveSettings(
         is_active: formData.get(`banner_${index}_is_active`) === "on",
       })),
     );
+  const outlookParagraphs = z
+    .array(paragraphSchema)
+    .length(OUTLOOK_SLOTS)
+    .safeParse(
+      slots(OUTLOOK_SLOTS).map((index) => ({
+        text_zh: field(formData, `outlook_${index}_zh`),
+        text_en: field(formData, `outlook_${index}_en`),
+      })),
+    );
   const memberBenefits = parsed.success
     ? z
         .array(benefitItemSchema)
         .safeParse(
-          zipBenefitItems(
+          zipLineItems(
             parsed.data.member_benefits_zh,
             parsed.data.member_benefits_en,
           ),
         )
+    : undefined;
+  const objectives = parsed.success
+    ? z
+        .array(benefitItemSchema)
+        .safeParse(
+          zipLineItems(parsed.data.objectives_zh, parsed.data.objectives_en),
+        )
+    : undefined;
+  const council = parsed.success
+    ? z
+        .array(councilMemberSchema)
+        .max(COUNCIL_MAX_MEMBERS)
+        .safeParse(parseCouncilLines(parsed.data.council_lines))
     : undefined;
   if (
     !parsed.success ||
@@ -320,7 +386,10 @@ export async function saveSettings(
     !orgUnits.success ||
     !gallery.success ||
     !banners.success ||
-    !memberBenefits?.success
+    !outlookParagraphs.success ||
+    !memberBenefits?.success ||
+    !objectives?.success ||
+    !council?.success
   ) {
     return {
       status: "error",
@@ -333,13 +402,14 @@ export async function saveSettings(
   const v = parsed.data;
   const supabase = await createClient();
 
-  // contact / identity / membership may carry keys this form does not edit
-  // (abn, legacy flags, …): merge onto the stored objects so a save never
-  // wipes them.
+  // contact / identity / membership / council / bank / legal may carry keys
+  // this form does not edit (abn, legacy flags, the roster heading,
+  // legal.constitution_url / accessibility_version, …): merge onto the
+  // stored objects so a save never wipes them.
   const { data: existingRows, error: readError } = await supabase
     .from("site_settings")
     .select("key, value")
-    .in("key", ["contact", "identity", "membership"]);
+    .in("key", ["contact", "identity", "membership", "council", "bank", "legal"]);
   if (readError) {
     return {
       status: "error",
@@ -353,6 +423,14 @@ export async function saveSettings(
 
   const confirmedFields = [...new Set(v.contact_confirmed)];
   const confirmedModules = [...new Set(v.review_confirmed)];
+
+  // The roster heading is not edited here: keep the stored value, else the
+  // seeded default (migration 20260902121000 §3).
+  const storedCouncil = existing("council");
+  const councilTitle = (key: "title_zh" | "title_en", fallback: string) => {
+    const value = storedCouncil[key];
+    return typeof value === "string" && value ? value : fallback;
+  };
 
   const { error } = await supabase.from("site_settings").upsert(
     [
@@ -421,6 +499,10 @@ export async function saveSettings(
         value: { items: memberBenefits.data },
       },
       {
+        key: "objectives",
+        value: { items: objectives.data },
+      },
+      {
         key: "pillars",
         value: { items: pillars.data },
       },
@@ -444,6 +526,26 @@ export async function saveSettings(
         value: { text_zh: v.secretariat_zh, text_en: v.secretariat_en },
       },
       {
+        key: "outlook",
+        value: {
+          title_zh: v.outlook_title_zh,
+          title_en: v.outlook_title_en,
+          // Empty slots are dropped; with no paragraph the module hides.
+          paragraphs: outlookParagraphs.data.filter(
+            (paragraph) => paragraph.text_zh || paragraph.text_en,
+          ),
+        },
+      },
+      {
+        key: "council",
+        value: {
+          ...storedCouncil,
+          title_zh: councilTitle("title_zh", "执委会议员"),
+          title_en: councilTitle("title_en", "Councillors"),
+          members: council.data,
+        },
+      },
+      {
         key: "gallery",
         value: { items: gallery.data },
       },
@@ -452,8 +554,20 @@ export async function saveSettings(
         value: { confirmed_modules: confirmedModules },
       },
       {
+        key: "bank",
+        value: {
+          ...existing("bank"),
+          account_name: v.bank_account_name,
+          bank_name: v.bank_name,
+          bsb: v.bank_bsb,
+          account_number: v.bank_account_number,
+          cards: v.bank_cards,
+        },
+      },
+      {
         key: "legal",
         value: {
+          ...existing("legal"),
           constitution_version: v.constitution_version,
           terms_version: v.terms_version,
           privacy_version: v.privacy_version,

@@ -11,6 +11,7 @@ import {
   updateApplicationStatus,
   type ActionState,
 } from "@/app/[locale]/admin/applications/actions";
+import { paymentMethodLabel } from "@/lib/utils/payment-methods.mjs";
 
 const initialState: ActionState = { status: "idle" };
 
@@ -31,6 +32,9 @@ export type ConsentSummary = {
   /** Pre-formatted for the admin locale; "—" when not recorded. */
   consentAt: string;
   policyVersion: string | null | undefined;
+  /** Declared payment intent (bank_transfer | cheque | credit_card); null
+   *  for rows submitted before the field was collected. */
+  paymentMethod: string | null | undefined;
 };
 
 export function ApplicationReview({
@@ -76,6 +80,10 @@ export function ApplicationReview({
     {
       label: zh ? "政策版本" : "Policy version",
       value: consent.policyVersion || "—",
+    },
+    {
+      label: zh ? "缴费方式" : "Payment method",
+      value: paymentMethodLabel(consent.paymentMethod, locale),
     },
   ];
 

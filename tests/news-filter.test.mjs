@@ -16,8 +16,8 @@ import {
 } from "../src/components/news/url-state.ts";
 
 // Mirror of the published corpus on the remote project (2026-09-02):
-// categories, featured flags and the health-chapter tags the preview
-// build applies. Titles are abbreviated but keep the searchable terms.
+// categories, featured flags and the Health Industry Committee tags that
+// migration 20260902121000 §9 sets (the preview build applies the same). Titles are abbreviated but keep the searchable terms.
 // The five DOCX categories are first-level; trade-cooperation is a legacy
 // CMS category (kept for its two articles, never a tab).
 const CATEGORIES = [
@@ -56,13 +56,13 @@ const ITEMS = [
   item(7, "obc-delegation-visits-liaoning-ccpit", "加强合作，促进交流——副理事长率团访问辽宁省贸促会", "trade-cooperation", true),
   item(6, "oceania-business-council-2026-agm-melbourne", "2026年年度会员大会在墨尔本成功举行", "association-news", true),
   item(5, "taizhou-delegation-visits-melbourne-cooperation", "台州市代表团访问墨尔本", "trade-cooperation", true),
-  item(4, "melbourne-australia-china-health-expo-tcm-forum-2025", "澳中健康产品博览会、世界传统医药论坛", "market-insights", false, ["health-products"]),
-  item(3, "world-traditional-medicine-forum-preparatory-meeting", "世界传统医药论坛筹备会议成功举行", "association-news", false, ["health-products"]),
-  item(2, "7th-world-traditional-medicine-forum-melbourne", "第七届世界传统医药论坛", "market-insights", false, ["health-products"]),
+  item(4, "melbourne-australia-china-health-expo-tcm-forum-2025", "澳中健康产品博览会、世界传统医药论坛", "market-insights", false, ["health"]),
+  item(3, "world-traditional-medicine-forum-preparatory-meeting", "世界传统医药论坛筹备会议成功举行", "association-news", false, ["health"]),
+  item(2, "7th-world-traditional-medicine-forum-melbourne", "第七届世界传统医药论坛", "market-insights", false, ["health"]),
   item(1, "acbca-chinese-new-year-networking-event", "新春商务联谊会圆满落幕", "association-news", false),
 ];
 
-const CHAPTERS = new Map([["health-products", "大健康／健康产品"]]);
+const CHAPTERS = new Map([["health", "大健康产业分会"]]);
 
 const slugs = (list) => list.map((i) => i.slug);
 
@@ -182,13 +182,13 @@ describe("industry tags", () => {
   test("tag chips come only from tags in use that match an active chapter", () => {
     const options = tagOptions(ITEMS, CHAPTERS);
     assert.deepEqual(options, [
-      { value: "health-products", label: "大健康／健康产品", count: 3 },
+      { value: "health", label: "大健康产业分会", count: 3 },
     ]);
     assert.deepEqual(tagOptions(ITEMS, new Map()), []);
   });
 
   test("tag filter lists the three health articles", () => {
-    const filter = { ...EMPTY_FILTER, tag: "health-products" };
+    const filter = { ...EMPTY_FILTER, tag: "health" };
     assert.deepEqual(slugs(filterNews(ITEMS, filter)), [
       "melbourne-australia-china-health-expo-tcm-forum-2025",
       "world-traditional-medicine-forum-preparatory-meeting",
@@ -208,13 +208,13 @@ describe("URL state (?category=&tag=&q=)", () => {
   test("round-trips category, tag and a Chinese query", () => {
     const filter = {
       category: "trade-cooperation",
-      tag: "health-products",
+      tag: "health",
       query: "辽宁 贸促会",
     };
     const search = searchFromFilter(filter);
     assert.equal(
       search,
-      "?category=trade-cooperation&tag=health-products&q=%E8%BE%BD%E5%AE%81+%E8%B4%B8%E4%BF%83%E4%BC%9A",
+      "?category=trade-cooperation&tag=health&q=%E8%BE%BD%E5%AE%81+%E8%B4%B8%E4%BF%83%E4%BC%9A",
     );
     assert.deepEqual(filterFromSearch(search), filter);
     // With or without the leading "?", as location.search may be either.
