@@ -1,13 +1,3 @@
-import type { MetadataRoute } from "next";
-
-// Prerendered (the Pages export needs a static file), and on the Node host
-// regenerated on the same 300-second cycle as the public pages, so articles
-// and events added in the CMS or the database reach sitemap.xml without a
-// deployment. The static export ignores `revalidate` and keeps the file it
-// built.
-export const dynamic = "force-static";
-export const revalidate = 300;
-
 import { getAllNewsSlugs, getPublishedNews } from "@/services/news";
 import { getAllEventSlugs, getPastEvents, getUpcomingEvents } from "@/services/events";
 import { getChapters } from "@/services/organisation";
@@ -15,6 +5,21 @@ import { getSiteSettings } from "@/services/settings";
 import { routing } from "@/i18n/routing";
 import { absoluteUrl } from "@/lib/seo";
 import { LEGAL_DOCUMENTS, legalDocumentVersion } from "@/lib/review";
+import { renderSitemapXml, type SitemapEntry } from "@/lib/utils/sitemap-xml.mjs";
+
+// A plain Route Handler rather than the `sitemap.ts` file convention. The
+// convention's generated handler pins `Cache-Control: public, max-age=0,
+// must-revalidate` on its response, and Next never replaces a Cache-Control
+// a handler set itself, so its `revalidate` did not reach the host: on
+// Vercel the file built at deploy time was served until the next
+// deployment, and an article or event added in the CMS or the database
+// stayed out of sitemap.xml. This handler sets no Cache-Control, so it is
+// regenerated on the same 300-second cycle as the public pages.
+//
+// `force-static` keeps it prerendered: the Pages export writes
+// out/sitemap.xml at build time (and ignores `revalidate`).
+export const dynamic = "force-static";
+export const revalidate = 300;
 
 const STATIC_ROUTES = [
   "",
@@ -30,7 +35,7 @@ const STATIC_ROUTES = [
   "/contact",
 ];
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+async function sitemapEntries(): Promise<SitemapEntry[]> {
   const [newsSlugs, eventSlugs, chapters, news, upcoming, past, settings] =
     await Promise.all([
       getAllNewsSlugs().catch(() => []),
@@ -74,11 +79,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: modified.get(path)
         ? new Date(modified.get(path)!)
         : new Date(),
-      alternates: {
-        languages: Object.fromEntries(
-          routing.locales.map((l) => [l, absoluteUrl(l, path || "/")]),
-        ),
-      },
+      alternates: Object.fromEntries(
+        routing.locales.map((l) => [l, absoluteUrl(l, path || "/")]),
+      ),
     })),
   );
+}
+
+export async function GET(): Promise<Response> {
+  return new Response(renderSitemapXml(await sitemapEntries()), {
+    headers: { "Content-Type": "application/xml" },
+  });
 }
