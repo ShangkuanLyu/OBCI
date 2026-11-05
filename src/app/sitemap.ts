@@ -1,6 +1,12 @@
 import type { MetadataRoute } from "next";
 
+// Prerendered (the Pages export needs a static file), and on the Node host
+// regenerated on the same 300-second cycle as the public pages, so articles
+// and events added in the CMS or the database reach sitemap.xml without a
+// deployment. The static export ignores `revalidate` and keeps the file it
+// built.
 export const dynamic = "force-static";
+export const revalidate = 300;
 
 import { getAllNewsSlugs, getPublishedNews } from "@/services/news";
 import { getAllEventSlugs, getPastEvents, getUpcomingEvents } from "@/services/events";
