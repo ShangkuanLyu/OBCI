@@ -141,5 +141,6 @@ Non-destructive first, always: additive DDL; any breaking change goes through an
 
 - `next/image` everywhere (Supabase image transformation as loader for storage-hosted images).
 - Font: variable font(s) self-hosted via `next/font` (no layout shift, no external font CDN).
-- Per-page metadata, `sitemap.xml/route.ts` (a Route Handler regenerated every 300 seconds — not the `sitemap.ts` convention, whose pinned `Cache-Control` stops time-based regeneration on Vercel), `robots.ts`, OpenGraph images, JSON-LD (`Organization`, `NewsArticle`, `Event`).
+- Per-page metadata, `robots.ts`, OpenGraph images, JSON-LD (`Organization`, `NewsArticle`, `Event`).
+- `sitemap.xml`: built by `src/lib/sitemap.ts`. On the Node host `next.config.ts` rewrites `/sitemap.xml` to the request-time handler `src/app/api/site-map/route.ts` (CDN-cached for 300 seconds), so new content is listed without a deployment. Next prerenders any app route at `/sitemap.xml` and Vercel never regenerates that file, which is why the request-time handler lives at another path; the prerendered `src/app/sitemap.xml/route.ts` is what the static export writes.
 - Animations: CSS/IntersectionObserver opacity+translate reveals only — no animation libraries by default.

@@ -79,11 +79,24 @@ const nextConfig: NextConfig = {
     // rendered without the [locale] root layout.
     globalNotFound: true,
   },
-  // `output: "export"` warns whenever redirects() is defined at all, so the
-  // method only exists on the Node config.
+  // `output: "export"` warns whenever redirects() or rewrites() is defined
+  // at all, so the methods only exist on the Node config.
   ...(isStaticExport
     ? {}
     : {
+        // /sitemap.xml is answered by the request-time handler; the app
+        // route at that path is always prerendered (see
+        // src/app/api/site-map/route.ts). `beforeFiles` runs ahead of
+        // prerendered routes, which a plain rewrite would not override.
+        async rewrites() {
+          return {
+            beforeFiles: [
+              { source: "/sitemap.xml", destination: "/api/site-map" },
+            ],
+            afterFiles: [],
+            fallback: [],
+          };
+        },
         async redirects() {
           return [
             ...OLD_PAGE_REDIRECTS.map(([source, destination]) => ({
